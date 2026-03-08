@@ -10,7 +10,7 @@
     <style>
         .custom-scrollbar::-webkit-scrollbar { width: 5px; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
-        #modalOverlay, #deleteModalOverlay { transition: opacity 0.3s many; }
+        #modalOverlay, #deleteModalOverlay { transition: opacity 0.3s ease; }
         .action-btn { opacity: 0; transition: opacity 0.2s; }
         tr:hover .action-btn { opacity: 1; }
         #syncBtn { min-width: 120px; justify-content: center; }
@@ -31,6 +31,14 @@
         .rate-input::-webkit-outer-spin-button,
         .rate-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
         .rate-input:focus { border-bottom-color: #10b981; color: #10b981; }
+
+        /* MOBILE FIX: CSS Fallback for Peso Sign */
+        .pesos-sign::before {
+            content: "P";
+            text-decoration: line-through;
+            text-decoration-thickness: 1px;
+            margin-right: 1px;
+        }
     </style>
 </head>
 <body class="bg-slate-950 text-slate-100 p-4 md:p-8">
@@ -133,20 +141,20 @@
                     <div class="space-y-4">
                         <div>
                             <p class="text-[10px] text-slate-500 uppercase font-black">Max Investable Amount</p>
-                            <p id="poolMax" class="text-2xl font-mono text-white font-black">&#8369 0.00</p>
+                            <p id="poolMax" class="text-2xl font-mono text-white font-black"><span class="pesos-sign"></span> 0.00</p>
                         </div>
                         <div class="space-y-2 pt-2 border-t border-slate-800">
                             <div class="flex justify-between text-xs">
                                 <span class="text-slate-400 flex items-center gap-1">(<input type="number" id="rateDigi" value="6" step="0.1" oninput="limitAndRefresh(this)" class="rate-input" style="width: 3ch;" disabled>%) Digital Banks </span>
-                                <span id="yieldDigi" class="font-mono text-emerald-500">+₱0.00</span>
+                                <span id="yieldDigi" class="font-mono text-emerald-500">+<span class="pesos-sign"></span>0.00</span>
                             </div>
                             <div class="flex justify-between text-xs">
                                 <span class="text-slate-400 flex items-center gap-1">(<input type="number" id="rateMP2" value="7" step="0.1" oninput="limitAndRefresh(this)" class="rate-input" style="width: 3ch;" disabled>%) Pag-Ibig Mp2 </span>
-                                <span id="yieldMP2" class="font-mono text-emerald-500">+₱0.00</span>
+                                <span id="yieldMP2" class="font-mono text-emerald-500">+<span class="pesos-sign"></span>0.00</span>
                             </div>
                             <div class="flex justify-between text-xs">
                                 <span class="text-slate-400 flex items-center gap-1">(<input type="number" id="rateStock" value="8" step="0.1" oninput="limitAndRefresh(this)" class="rate-input" style="width: 3ch;" disabled>%) Div. Stocks </span>
-                                <span id="yieldStock" class="font-mono text-emerald-500">+₱0.00</span>
+                                <span id="yieldStock" class="font-mono text-emerald-500">+<span class="pesos-sign"></span>0.00</span>
                             </div>
                         </div>
                     </div>
@@ -199,7 +207,13 @@
         let db = [];
         let chartInstance = null;
         let hasUnsavedChanges = false;
-        const phFormat = new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' });
+        
+        // SCRIPT CHANGE: Use a generic formatter and handle the peso symbol manually for mobile compatibility
+        const phFormat = new Intl.NumberFormat('en-PH', { 
+            style: 'currency', 
+            currency: 'PHP', 
+            currencyDisplay: 'narrowSymbol' 
+        });
 
         const DB_NAME = "FileStorage";
         const STORE_NAME = "handles";
@@ -242,7 +256,6 @@
             if (storedHandle) {
                 fileHandle = storedHandle;
                 try {
-                    // Browsers require a user gesture to prompt, so this handles background verification
                     const isPermitted = await fileHandle.queryPermission({mode: 'readwrite'}) === 'granted';
                     if (isPermitted) {
                         await loadFile();
@@ -262,10 +275,7 @@
             try {
                 if (fileHandle) {
                     const isPermitted = await verifyPermission(fileHandle, true);
-                    if (isPermitted) {
-                        await loadFile();
-                        return;
-                    }
+                    if (isPermitted) { await loadFile(); return; }
                 }
                 [fileHandle] = await window.showOpenFilePicker({
                     types: [{ description: 'Excel', accept: { 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'] } }],
@@ -297,7 +307,6 @@
             } catch (err) { 
                 statusEl.innerText = `Disconnected`;
                 statusEl.classList.replace('text-emerald-500', 'text-red-500');
-                alert("File Load Error: Ensure Excel is closed and permissions granted."); 
             }
         }
 
@@ -324,21 +333,24 @@
                 }
             });
 
-            const netCashTotal = totalRunningInc - totalRunningExp;
-            document.getElementById('statNet').innerText = phFormat.format(netCashTotal);
-            document.getElementById('poolMax').innerText = phFormat.format(Math.max(0, netCashTotal));
+            const netTotal = totalRunningInc - totalRunningExp;
+            const pool = Math.max(0, netTotal);
+            
+            // Apply formatting to Stats (Net, Flow, Prev)
+            document.getElementById('statNet').innerText = phFormat.format(netTotal);
+            document.getElementById('statExp').innerText = phFormat.format(curInc - curExp);
+            
+            // Yield Pool Fix for Mobile
+            document.getElementById('poolMax').innerHTML = `<span class="pesos-sign"></span> ${pool.toLocaleString('en-PH', {minimumFractionDigits: 2})}`;
             
             const rates = [parseFloat(document.getElementById('rateDigi').value), parseFloat(document.getElementById('rateMP2').value), parseFloat(document.getElementById('rateStock').value)];
-            const pool = Math.max(0, netCashTotal);
-            document.getElementById('yieldDigi').innerText = `+${phFormat.format(pool * (rates[0]/100))}`;
-            document.getElementById('yieldMP2').innerText = `+${phFormat.format(pool * (rates[1]/100))}`;
-            document.getElementById('yieldStock').innerText = `+${phFormat.format(pool * (rates[2]/100))}`;
+            document.getElementById('yieldDigi').innerHTML = `+<span class="pesos-sign"></span>${(pool * (rates[0]/100)).toLocaleString('en-PH', {minimumFractionDigits: 2})}`;
+            document.getElementById('yieldMP2').innerHTML = `+<span class="pesos-sign"></span>${(pool * (rates[1]/100)).toLocaleString('en-PH', {minimumFractionDigits: 2})}`;
+            document.getElementById('yieldStock').innerHTML = `+<span class="pesos-sign"></span>${(pool * (rates[2]/100)).toLocaleString('en-PH', {minimumFractionDigits: 2})}`;
             
-            document.getElementById('statExp').innerText = phFormat.format(curInc - curExp);
             updateChart(cats);
         }
 
-        // Standard Utility Functions
         function formatInputAmount(input) {
             let value = input.value.replace(/[^0-9.]/g, '');
             const parts = value.split('.');
