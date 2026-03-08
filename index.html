@@ -21,16 +21,8 @@
         }
         .sync-warning { animation: pulse-red 2s infinite; }
         select { cursor: pointer; padding-right: 2.5rem !important; }
-        /* Updated Rate Input Styling */
-        .rate-input { 
-            background: transparent; 
-            border-bottom: 1px dashed #334155; 
-            text-align: center; 
-            outline: none; 
-            -moz-appearance: textfield;
-        }
-        .rate-input::-webkit-outer-spin-button,
-        .rate-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+        .rate-input { background: transparent; border-bottom: 1px dashed #334155; text-align: center; outline: none; -moz-appearance: textfield; }
+        .rate-input::-webkit-outer-spin-button, .rate-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
         .rate-input:focus { border-bottom-color: #10b981; color: #10b981; }
     </style>
 </head>
@@ -137,20 +129,20 @@
                     <div class="space-y-4">
                         <div>
                             <p class="text-[10px] text-slate-500 uppercase font-black">Max Investable Amount</p>
-                            <p id="poolMax" class="text-2xl font-mono text-white font-black">&#8369 0.00</p>
+                            <p id="poolMax" class="text-2xl font-mono text-white font-black">₱ 0.00</p>
                         </div>
                         <div class="space-y-2 pt-2 border-t border-slate-800">
                             <div class="flex justify-between text-xs">
                                 <span class="text-slate-400 flex items-center gap-1">(<input type="number" id="rateDigi" value="6" step="0.1" oninput="limitAndRefresh(this)" class="rate-input" style="width: 3ch;" disabled>%) Digital Banks </span>
-                                <span id="yieldDigi" class="font-mono text-emerald-500">+&#8369 0.00</span>
+                                <span id="yieldDigi" class="font-mono text-emerald-500">+₱ 0.00</span>
                             </div>
                             <div class="flex justify-between text-xs">
                                 <span class="text-slate-400 flex items-center gap-1">(<input type="number" id="rateMP2" value="7" step="0.1" oninput="limitAndRefresh(this)" class="rate-input" style="width: 3ch;" disabled>%) Pag-Ibig Mp2 </span>
-                                <span id="yieldMP2" class="font-mono text-emerald-500">+&#8369 0.00</span>
+                                <span id="yieldMP2" class="font-mono text-emerald-500">+₱ 0.00</span>
                             </div>
                             <div class="flex justify-between text-xs">
                                 <span class="text-slate-400 flex items-center gap-1">(<input type="number" id="rateStock" value="8" step="0.1" oninput="limitAndRefresh(this)" class="rate-input" style="width: 3ch;" disabled>%) Div. Stocks </span>
-                                <span id="yieldStock" class="font-mono text-emerald-500">+&#8369 0.00</span>
+                                <span id="yieldStock" class="font-mono text-emerald-500">+₱ 0.00</span>
                             </div>
                         </div>
                         <p class="text-[9px] text-slate-600 italic">Estimated annual passive gains based on PH market 2026 performance.</p>
@@ -162,18 +154,18 @@
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 h-fit">
                     <div class="bg-slate-900 p-5 rounded-2xl border border-slate-800 shadow-lg">
                         <p id="labelNet" class="text-[10px] text-slate-500 uppercase font-black">Net Cash (Total)</p>
-                        <p id="statNet" class="text-2xl font-mono text-white mt-1">&#8369 0.00</p>
+                        <p id="statNet" class="text-2xl font-mono text-white mt-1">₱ 0.00</p>
                     </div>
                     <div class="bg-slate-900 p-5 rounded-2xl border border-slate-800 shadow-lg">
                         <div class="flex justify-between items-start">
                             <p id="labelExp" class="text-[10px] text-slate-500 uppercase font-black">Cash Flow</p>
                             <span id="yoYIndicator" class="text-[9px] font-bold px-2 py-0.5 rounded-full hidden cursor-help"></span>
                         </div>
-                        <p id="statExp" class="text-2xl font-mono text-white mt-1">&#8369 0.00</p>
+                        <p id="statExp" class="text-2xl font-mono text-white mt-1">₱ 0.00</p>
                     </div>
                     <div class="bg-slate-900 p-5 rounded-2xl border border-slate-800 shadow-lg relative overflow-hidden">
                         <p id="labelPrev" class="text-[10px] text-slate-500 uppercase font-black">Prev Cash Flow</p>
-                        <p id="statPrevYear" class="text-2xl font-mono text-white mt-1">&#8369 0.00</p>
+                        <p id="statPrevYear" class="text-2xl font-mono text-white mt-1">₱ 0.00</p>
                     </div>
                 </div>
 
@@ -360,7 +352,7 @@
             const amt = parseFloat(item.Amount) || 0;
             document.getElementById('delInfoDate').innerText = item.Date;
             document.getElementById('delInfoCategory').innerText = item.Category;
-            document.getElementById('delInfoAmount').innerText = (isExp ? '-' : '+') + amt.toLocaleString('en-PH', {minimumFractionDigits: 2});
+            document.getElementById('delInfoAmount').innerText = (isExp ? '-' : '+') + phFormat.format(amt);
             document.getElementById('delInfoAmount').className = `text-xl font-mono font-black ${isExp ? 'text-rose-500' : 'text-emerald-400'}`;
             document.getElementById('deleteTargetIndex').value = index;
             document.getElementById('deleteModalOverlay').classList.remove('hidden');
@@ -413,7 +405,7 @@
                     const row = `<tr class="border-b border-slate-800/50 hover:bg-slate-800/20 group">
                         <td class="p-3 text-slate-500 text-[10px]">${item.Date}</td>
                         <td class="p-3 font-bold text-slate-300">${item.Category}</td>
-                        <td class="p-3 text-right font-mono ${isExp ? 'text-rose-500' : 'text-emerald-400'}">${isExp ? '-' : '+'}${amt.toLocaleString('en-PH', {minimumFractionDigits: 2})}</td>
+                        <td class="p-3 text-right font-mono ${isExp ? 'text-rose-500' : 'text-emerald-400'}">${isExp ? '-' : ''}${phFormat.format(amt)}</td>
                         <td class="p-3 text-right w-16">
                             <div class="flex gap-2 justify-end action-btn">
                                 <button onclick="editItem(${index})" class="text-blue-400 hover:text-blue-300">✎</button>
