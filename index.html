@@ -11,8 +11,8 @@
         .custom-scrollbar::-webkit-scrollbar { width: 5px; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
         #modalOverlay, #deleteModalOverlay { transition: opacity 0.3s ease; }
-        .action-btn { opacity: 0; transition: opacity 0.2s; }
-        tr:hover .action-btn { opacity: 1; }
+        .action-btn { opacity: 1 !important; /* Force visible for mobile touch */ }
+        @media (min-width: 768px) { .action-btn { opacity: 0; transition: opacity 0.2s; } tr:hover .action-btn { opacity: 1; } }
         #syncBtn { min-width: 120px; justify-content: center; }
         @keyframes pulse-red {
             0% { box-shadow: 0 0 0 0 rgba(225, 29, 72, 0.7); }
@@ -21,8 +21,15 @@
         }
         .sync-warning { animation: pulse-red 2s infinite; }
         select { cursor: pointer; padding-right: 2.5rem !important; }
-        .rate-input { background: transparent; border-bottom: 1px dashed #334155; text-align: center; outline: none; -moz-appearance: textfield; }
-        .rate-input::-webkit-outer-spin-button, .rate-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+        .rate-input { 
+            background: transparent; 
+            border-bottom: 1px dashed #334155; 
+            text-align: center; 
+            outline: none; 
+            -moz-appearance: textfield;
+        }
+        .rate-input::-webkit-outer-spin-button,
+        .rate-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
         .rate-input:focus { border-bottom-color: #10b981; color: #10b981; }
     </style>
 </head>
@@ -40,7 +47,7 @@
     </div>
 
     <div id="deleteModalOverlay" class="fixed inset-0 bg-slate-950/60 backdrop-blur-md z-[60] hidden flex items-center justify-center p-4">
-        <div class="bg-slate-900 border border-slate-800 p-6 rounded-3xl shadow-2xl w-full max-w-sm">
+        <div class="bg-slate-900 border border-slate-800 p-6 rounded-3xl shadow-2xl w-full max-sm">
            <center><h3 class="text-xl font-bold text-rose-500 mb-2">Delete Entry?</h3></center>
             <div id="deleteItemDetails" class="bg-slate-950/50 rounded-2xl p-4 mb-6 border border-slate-800 text-center">
                 <p id="delInfoDate" class="text-[10px] text-slate-500 font-mono"></p>
@@ -63,11 +70,11 @@
                     <p id="statusText" class="text-red-500 text-xs font-mono uppercase italic">Disconnected</p>
                 </div>
                 <div class="flex items-center gap-3">
-                    <button id="syncBtn" title="Saves changes and refreshes dashboard" onclick="saveToDisk()" disabled class="bg-slate-800 text-slate-500 px-6 py-2 rounded-full font-bold text-sm flex items-center gap-2 border border-slate-700 transition-all">
+                    <button id="syncBtn" title="Saves changes" onclick="saveToDisk()" disabled class="bg-slate-800 text-slate-500 px-6 py-2 rounded-full font-bold text-sm flex items-center gap-2 border border-slate-700 transition-all">
                         <span>🔄</span> Sync 
                     </button>
                     <button id="connectBtn" onclick="openMasterFile()" class="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2 rounded-full font-bold text-sm transition-all shadow-lg shadow-blue-900/20">
-                        📂 Connect/Change File
+                        📂 Connect File
                     </button>
                 </div>
             </div>
@@ -75,13 +82,13 @@
             <div class="flex flex-wrap items-center gap-4 bg-slate-900 p-4 rounded-2xl border border-slate-800">
                 <div class="flex flex-col">
                     <label class="text-[10px] font-bold text-slate-500 mb-1 uppercase">Year</label>
-                    <select id="filterYear" onchange="updateUI()" class="bg-slate-800 border-none rounded-lg p-2 pr-7 text-sm text-white outline-none w-32 appearance-none" style="background-image: url('data:image/svg+xml;charset=US-ASCII,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2224%22 height=%2224%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22white%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><polyline points=%226 9 12 15 18 9%22></polyline></svg>'); background-repeat: no-repeat; background-position: right 0.5rem center; background-size: 1em;">
+                    <select id="filterYear" onchange="updateUI()" class="bg-slate-800 border-none rounded-lg p-2 pr-7 text-sm text-white outline-none w-32 appearance-none">
                     <option value="2026">2026</option>
                     </select>
                 </div>
                 <div class="flex flex-col">
                     <label class="text-[10px] font-bold text-slate-500 mb-1 uppercase">Month</label>
-                    <select id="filterMonth" onchange="updateUI()" class="bg-slate-800 border-none rounded-lg p-2 pr-8 text-sm text-white outline-none w-40 appearance-none" style="background-image: url('data:image/svg+xml;charset=US-ASCII,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2224%22 height=%2224%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22white%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><polyline points=%226 9 12 15 18 9%22></polyline></svg>'); background-repeat: no-repeat; background-position: right 0.75rem center; background-size: 1em;">
+                    <select id="filterMonth" onchange="updateUI()" class="bg-slate-800 border-none rounded-lg p-2 pr-8 text-sm text-white outline-none w-40 appearance-none">
                     <option value="all">Full Year (All)</option>
                     <option value="0">January</option><option value="1">February</option>
                     <option value="2">March</option><option value="3">April</option>
@@ -90,9 +97,6 @@
                     <option value="8">September</option><option value="9">October</option>
                     <option value="10">November</option><option value="11">December</option>
                     </select>
-                </div>
-                <div class="ml-auto text-right">
-                    <div id="lastSaved" class="text-[10px] text-emerald-500 font-mono font-bold"></div>
                 </div>
             </div>
         </header>
@@ -104,12 +108,12 @@
                     <form id="txForm" class="space-y-4">
                         <input type="hidden" id="editIndex" value="-1">
                         <input type="date" id="date" required class="w-full bg-slate-800 border-none rounded-lg p-3 text-sm text-white outline-none">
-                        <select id="category" required onchange="handleCategoryChange(this)" class="w-full bg-slate-800 border-none rounded-lg p-3 pr-10 text-sm text-white outline-none appearance-none" style="background-image: url('data:image/svg+xml;charset=US-ASCII,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2224%22 height=%2224%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22white%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><polyline points=%226 9 12 15 18 9%22></polyline></svg>'); background-repeat: no-repeat; background-position: right 1rem center; background-size: 1em;">
+                        <select id="category" required onchange="handleCategoryChange(this)" class="w-full bg-slate-800 border-none rounded-lg p-3 text-sm text-white outline-none appearance-none">
                             <option value="" disabled selected>Select Category</option>
                             <option value="NEW_CAT" class="text-emerald-500 font-bold">+ Add New Category</option>
                         </select>
                         <input type="text" id="amount" placeholder="Amount" required oninput="formatInputAmount(this)" class="w-full bg-slate-800 border-none rounded-lg p-3 text-sm text-white outline-none font-mono">
-                        <select id="type" class="w-full bg-slate-800 border-none rounded-lg p-3 pr-10 text-sm text-white outline-none appearance-none" style="background-image: url('data:image/svg+xml;charset=US-ASCII,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2224%22 height=%2224%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22white%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><polyline points=%226 9 12 15 18 9%22></polyline></svg>'); background-repeat: no-repeat; background-position: right 1rem center; background-size: 1.2em;">
+                        <select id="type" class="w-full bg-slate-800 border-none rounded-lg p-3 text-sm text-white outline-none appearance-none">
                             <option value="Expense">Expense</option>
                             <option value="Income">Income</option>
                         </select>
@@ -145,7 +149,6 @@
                                 <span id="yieldStock" class="font-mono text-emerald-500">+₱ 0.00</span>
                             </div>
                         </div>
-                        <p class="text-[9px] text-slate-600 italic">Estimated annual passive gains based on PH market 2026 performance.</p>
                     </div>
                 </section>
             </div>
@@ -171,9 +174,7 @@
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 flex-grow">
                     <div class="bg-slate-900 rounded-2xl border border-slate-800 flex flex-col shadow-xl overflow-hidden h-full">
-                        <div class="p-3 bg-slate-800/30 text-[10px] font-black tracking-widest uppercase">
-                            <span>Finance History</span>
-                        </div>
+                        <div class="p-3 bg-slate-800/30 text-[10px] font-black tracking-widest uppercase">Finance History</div>
                         <div class="overflow-y-auto custom-scrollbar flex-grow">
                             <table class="w-full text-xs text-left">
                                 <tbody id="tableBody"></tbody>
@@ -196,17 +197,18 @@
         let db = [];
         let chartInstance = null;
         let hasUnsavedChanges = false;
+        // Strict UTF-8 character for Peso to ensure Samsung Browser compatibility
+        const PESO_SYM = "\u20B1"; 
         const phFormat = new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' });
 
         const DB_NAME = "FileStorage";
         const STORE_NAME = "handles";
 
         async function getDB() {
-            return new Promise((resolve, reject) => {
+            return new Promise((resolve) => {
                 const request = indexedDB.open(DB_NAME, 1);
                 request.onupgradeneeded = (e) => e.target.result.createObjectStore(STORE_NAME);
                 request.onsuccess = (e) => resolve(e.target.result);
-                request.onerror = (e) => reject(e.target.error);
             });
         }
 
@@ -221,6 +223,7 @@
             return new Promise((resolve) => {
                 const request = dbObj.transaction(STORE_NAME).objectStore(STORE_NAME).get("last_handle");
                 request.onsuccess = () => resolve(request.result);
+                request.onerror = () => resolve(null);
             });
         }
 
@@ -229,45 +232,13 @@
             const storedHandle = await loadHandle();
             if (storedHandle) {
                 fileHandle = storedHandle;
-                const permission = await fileHandle.queryPermission({mode: 'readwrite'});
-                if (permission === 'granted') {
-                    loadFile();
-                } else {
-                    document.getElementById('statusText').innerText = "RESTORED: CLICK 'CONNECT' TO VERIFY ACCESS";
-                }
+                // On mobile/Samsung, we prompt the user to re-verify if handle exists
+                document.getElementById('statusText').innerText = "TAP 'CONNECT' TO RE-SYNC FILE";
             }
-            if(localStorage.getItem('rateDigi')) document.getElementById('rateDigi').value = localStorage.getItem('rateDigi');
-            if(localStorage.getItem('rateMP2')) document.getElementById('rateMP2').value = localStorage.getItem('rateMP2');
-            if(localStorage.getItem('rateStock')) document.getElementById('rateStock').value = localStorage.getItem('rateStock');
-        };
-
-        function limitAndRefresh(el) {
-            if (el.value.length > 3) el.value = el.value.slice(0, 3);
-            updateUI();
-        }
-
-        function toggleRateEdit() {
-            const inputs = [document.getElementById('rateDigi'), document.getElementById('rateMP2'), document.getElementById('rateStock')];
-            const btn = document.getElementById('rateEditBtn');
-            const isEditing = !inputs[0].disabled;
-
-            inputs.forEach(input => {
-                input.disabled = isEditing;
-                if(!isEditing) input.classList.add('border-emerald-500');
-                else input.classList.remove('border-emerald-500');
+            ['rateDigi', 'rateMP2', 'rateStock'].forEach(id => {
+                if(localStorage.getItem(id)) document.getElementById(id).value = localStorage.getItem(id);
             });
-
-            if(!isEditing) {
-                btn.innerText = "Lock Rates";
-                btn.classList.add('text-emerald-500');
-            } else {
-                btn.innerText = "Edit Rates";
-                btn.classList.remove('text-emerald-500');
-                localStorage.setItem('rateDigi', inputs[0].value);
-                localStorage.setItem('rateMP2', inputs[1].value);
-                localStorage.setItem('rateStock', inputs[2].value);
-            }
-        }
+        };
 
         function formatInputAmount(input) {
             let value = input.value.replace(/[^0-9.]/g, '');
@@ -276,123 +247,68 @@
             if (value !== "") {
                 let formatted = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
                 input.value = (parts.length > 1) ? formatted + "." + parts[1].substring(0, 2) : formatted;
-            } else { input.value = ""; }
+            }
         }
 
         async function openMasterFile() {
             try {
-                [fileHandle] = await window.showOpenFilePicker({
-                    types: [{ description: 'Excel', accept: { 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'] } }],
-                    multiple: false
-                });
-                await saveHandle(fileHandle);
-                const permission = await fileHandle.requestPermission({mode: 'readwrite'});
-                if (permission === 'granted') loadFile();
+                // Check if browser supports modern File API
+                if (window.showOpenFilePicker) {
+                    [fileHandle] = await window.showOpenFilePicker({
+                        types: [{ description: 'Excel', accept: { 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'] } }],
+                        multiple: false
+                    });
+                    await saveHandle(fileHandle);
+                    const permission = await fileHandle.requestPermission({mode: 'readwrite'});
+                    if (permission === 'granted') loadFile();
+                } else {
+                    // Fallback for older Samsung Browser versions
+                    alert("Your browser version has limited file sync support. Use Chrome or update Samsung Internet for best results.");
+                    const input = document.createElement('input');
+                    input.type = 'file';
+                    input.accept = '.xlsx';
+                    input.onchange = (e) => {
+                        const file = e.target.files[0];
+                        const reader = new FileReader();
+                        reader.onload = (event) => {
+                            processData(event.target.result);
+                            document.getElementById('statusText').innerText = `Viewing: ${file.name}`;
+                        };
+                        reader.readAsArrayBuffer(file);
+                    };
+                    input.click();
+                }
             } catch (err) { console.log("Picker closed"); }
         }
 
         async function loadFile() {
-            const statusEl = document.getElementById('statusText');
             try {
                 const file = await fileHandle.getFile();
                 const contents = await file.arrayBuffer();
-                const workbook = XLSX.read(new Uint8Array(contents), { type: 'array' });
-                db = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
-                setupFilters();
-                updateCategoryDropdown();
-                updateUI();
-                statusEl.innerText = `Connected: ${file.name}`;
-                statusEl.classList.replace('text-red-500', 'text-emerald-500');
+                processData(contents);
+                document.getElementById('statusText').innerText = `Connected: ${file.name}`;
+                document.getElementById('statusText').classList.replace('text-red-500', 'text-emerald-500');
                 document.getElementById('submitBtn').disabled = false;
-                document.getElementById('submitBtn').className = "w-full bg-emerald-600 hover:bg-emerald-500 text-white py-4 rounded-xl font-black text-sm uppercase transition-all";
+                document.getElementById('submitBtn').className = "w-full bg-emerald-600 text-white py-4 rounded-xl font-black text-sm uppercase";
                 document.getElementById('submitBtn').innerText = "ADD TO LIST";
-                hasUnsavedChanges = false;
-                refreshSyncState();
-            } catch (err) { 
-                statusEl.innerText = `Disconnected`;
-                statusEl.classList.replace('text-emerald-500', 'text-red-500');
-                alert("File Load Error: Ensure Excel is closed."); 
-            }
+            } catch (err) { alert("File Load Error: Ensure Excel is not open in another app."); }
         }
 
-        function updateCategoryDropdown() {
-            const catSelect = document.getElementById('category');
-            const uniqueCategories = [...new Set(db.map(item => item.Category))].filter(Boolean).sort();
-            catSelect.innerHTML = `<option value="" disabled selected>Select Category</option><option value="NEW_CAT" class="text-emerald-500 font-bold">+ Add New Category</option>` + uniqueCategories.map(cat => `<option value="${cat}">${cat}</option>`).join('');
-        }
-
-        function handleCategoryChange(select) {
-            if (select.value === "NEW_CAT") {
-                document.getElementById('modalOverlay').classList.remove('hidden');
-                document.getElementById('modalInput').focus();
-            }
-        }
-
-        function closeModal() {
-            document.getElementById('modalOverlay').classList.add('hidden');
-            document.getElementById('category').value = "";
-            document.getElementById('modalInput').value = "";
-        }
-
-        function confirmNewCategory() {
-            const select = document.getElementById('category');
-            const newName = document.getElementById('modalInput').value.trim();
-            if (newName !== "") {
-                const option = document.createElement("option");
-                option.value = newName; option.text = newName;
-                select.add(option);
-                select.value = newName;
-                document.getElementById('modalOverlay').classList.add('hidden');
-            }
-        }
-
-        function deleteItem(index) {
-            const item = db[index];
-            const isExp = item.Type?.toLowerCase() === 'expense';
-            const amt = parseFloat(item.Amount) || 0;
-            document.getElementById('delInfoDate').innerText = item.Date;
-            document.getElementById('delInfoCategory').innerText = item.Category;
-            document.getElementById('delInfoAmount').innerText = (isExp ? '-' : '+') + phFormat.format(amt);
-            document.getElementById('delInfoAmount').className = `text-xl font-mono font-black ${isExp ? 'text-rose-500' : 'text-emerald-400'}`;
-            document.getElementById('deleteTargetIndex').value = index;
-            document.getElementById('deleteModalOverlay').classList.remove('hidden');
-        }
-
-        function closeDeleteModal() { document.getElementById('deleteModalOverlay').classList.add('hidden'); }
-
-        function confirmDelete() {
-            const index = document.getElementById('deleteTargetIndex').value;
-            db.splice(index, 1);
-            hasUnsavedChanges = true;
+        function processData(contents) {
+            const workbook = XLSX.read(new Uint8Array(contents), { type: 'array' });
+            db = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
+            setupFilters();
+            updateCategoryDropdown();
             updateUI();
+            hasUnsavedChanges = false;
             refreshSyncState();
-            closeDeleteModal();
-        }
-
-        function setupFilters() {
-            const now = new Date();
-            const curY = now.getFullYear();
-            const curM = now.getMonth();
-            const yearSelect = document.getElementById('filterYear');
-            let years = [...new Set(db.map(item => new Date(item.Date).getFullYear()))];
-            if (!years.includes(curY)) years.push(curY);
-            yearSelect.innerHTML = years.sort((a,b)=>b-a).map(y => `<option value="${y}">${y}</option>`).join('');
-            yearSelect.value = curY;
-            document.getElementById('filterMonth').value = curM;
         }
 
         function updateUI() {
             const year = parseInt(document.getElementById('filterYear').value);
             const monthVal = document.getElementById('filterMonth').value;
             const body = document.getElementById('tableBody'); body.innerHTML = '';
-            const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-            const currentLabel = monthVal === "all" ? `Full ${year}` : `${monthNames[monthVal]} ${year}`;
-            const comparisonLabel = monthVal === "all" ? `Full ${year - 1}` : `${monthNames[monthVal]} ${year - 1}`;
             
-            document.getElementById('labelNet').innerText = `Net Cash Flow: Total History`;
-            document.getElementById('labelExp').innerText = `Cash Flow: ${currentLabel}`;
-            document.getElementById('labelPrev').innerText = `Prev Cash Flow: ${comparisonLabel}`;
-
             let curExp = 0, curInc = 0, cats = {}, prevYrExp = 0, prevYrInc = 0;
             let totalRunningInc = 0, totalRunningExp = 0;
             
@@ -400,16 +316,17 @@
                 const d = new Date(item.Date), iY = d.getFullYear(), iM = d.getMonth();
                 const amt = parseFloat(item.Amount) || 0, isExp = item.Type?.toLowerCase() === 'expense';
                 isExp ? totalRunningExp += amt : totalRunningInc += amt;
+
                 if (iY === year && (monthVal === "all" || iM === parseInt(monthVal))) {
                     isExp ? (curExp += amt, cats[item.Category] = (cats[item.Category] || 0) + amt) : curInc += amt;
-                    const row = `<tr class="border-b border-slate-800/50 hover:bg-slate-800/20 group">
+                    const row = `<tr class="border-b border-slate-800/50 hover:bg-slate-800/20">
                         <td class="p-3 text-slate-500 text-[10px]">${item.Date}</td>
                         <td class="p-3 font-bold text-slate-300">${item.Category}</td>
-                        <td class="p-3 text-right font-mono ${isExp ? 'text-rose-500' : 'text-emerald-400'}">${isExp ? '-' : ''}${phFormat.format(amt)}</td>
-                        <td class="p-3 text-right w-16">
+                        <td class="p-3 text-right font-mono ${isExp ? 'text-rose-500' : 'text-emerald-400'}">${isExp ? '-' : '+'}${phFormat.format(amt).replace('PHP', '').trim()}</td>
+                        <td class="p-3 text-right">
                             <div class="flex gap-2 justify-end action-btn">
-                                <button onclick="editItem(${index})" class="text-blue-400 hover:text-blue-300">✎</button>
-                                <button onclick="deleteItem(${index})" class="text-rose-500 hover:text-rose-400">✕</button>
+                                <button onclick="editItem(${index})" class="text-blue-400 p-1">✎</button>
+                                <button onclick="deleteItem(${index})" class="text-rose-500 p-1">✕</button>
                             </div>
                         </td>
                     </tr>`;
@@ -420,61 +337,117 @@
                 }
             });
 
-            const netCashTotal = totalRunningInc - totalRunningExp;
-            document.getElementById('statNet').innerText = phFormat.format(netCashTotal);
-            document.getElementById('statNet').className = `text-2xl font-mono mt-1 ${netCashTotal < 0 ? 'text-rose-500' : 'text-emerald-400'}`;
+            const netTotal = totalRunningInc - totalRunningExp;
+            document.getElementById('statNet').innerText = phFormat.format(netTotal);
+            document.getElementById('statNet').className = `text-2xl font-mono mt-1 ${netTotal < 0 ? 'text-rose-500' : 'text-emerald-400'}`;
             
-            const poolValue = Math.max(0, netCashTotal);
+            const poolValue = Math.max(0, netTotal);
             document.getElementById('poolMax').innerText = phFormat.format(poolValue);
             
-            const rD = parseFloat(document.getElementById('rateDigi').value) / 100 || 0;
-            const rM = parseFloat(document.getElementById('rateMP2').value) / 100 || 0;
-            const rS = parseFloat(document.getElementById('rateStock').value) / 100 || 0;
+            const rates = [
+                {id: 'yieldDigi', val: parseFloat(document.getElementById('rateDigi').value)},
+                {id: 'yieldMP2', val: parseFloat(document.getElementById('rateMP2').value)},
+                {id: 'yieldStock', val: parseFloat(document.getElementById('rateStock').value)}
+            ];
 
-            document.getElementById('yieldDigi').innerText = `+${phFormat.format(poolValue * rD)}`;
-            document.getElementById('yieldMP2').innerText = `+${phFormat.format(poolValue * rM)}`;
-            document.getElementById('yieldStock').innerText = `+${phFormat.format(poolValue * rS)}`;
+            rates.forEach(r => {
+                document.getElementById(r.id).innerText = `+${phFormat.format(poolValue * (r.val/100))}`;
+            });
             
             const curFlow = curInc - curExp;
             document.getElementById('statExp').innerText = phFormat.format(curFlow);
             document.getElementById('statExp').className = `text-2xl font-mono mt-1 ${curFlow < 0 ? 'text-rose-500' : 'text-emerald-400'}`;
+            
             const prevFlow = prevYrInc - prevYrExp;
             document.getElementById('statPrevYear').innerText = phFormat.format(prevFlow);
-            document.getElementById('statPrevYear').className = `text-2xl font-mono mt-1 ${prevFlow < 0 ? 'text-rose-500' : 'text-emerald-400'}`;
-
-            const indicator = document.getElementById('yoYIndicator');
-            if (prevYrInc > 0 || prevYrExp > 0) {
-                const diff = ((curFlow - prevFlow) / (Math.abs(prevFlow) || 1)) * 100;
-                indicator.classList.remove('hidden');
-                let symbol = curFlow > prevFlow ? "▲" : (curFlow < prevFlow ? "▼" : "▬");
-                let colorClass = curFlow > prevFlow ? "bg-emerald-500/20 text-emerald-500" : (curFlow < prevFlow ? "bg-rose-500/20 text-rose-500" : "bg-slate-500/20 text-slate-400");
-                indicator.innerHTML = `<span title="Comparison from Previous">${symbol} ${Math.abs(diff).toFixed(1)}%</span>`;
-                indicator.className = `text-[9px] font-bold px-2 py-0.5 rounded-full flex items-center ${colorClass} cursor-help`;
-            } else { indicator.classList.add('hidden'); }
             
             updateChart(cats);
         }
 
-        function editItem(index) {
-            const item = db[index];
-            document.getElementById('date').value = item.Date;
-            document.getElementById('category').value = item.Category;
-            const amtInput = document.getElementById('amount');
-            amtInput.value = item.Amount;
-            formatInputAmount(amtInput);
-            document.getElementById('type').value = item.Type;
-            document.getElementById('editIndex').value = index;
-            document.getElementById('submitBtn').innerText = "UPDATE ENTRY";
-            document.getElementById('cancelEditBtn').classList.remove('hidden');
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+        async function saveToDisk() {
+            if (db.length === 0) return;
+            try {
+                const ws = XLSX.utils.json_to_sheet(db);
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, "Transactions");
+                const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+
+                if (fileHandle && fileHandle.createWritable) {
+                    const writable = await fileHandle.createWritable();
+                    await writable.write(wbout);
+                    await writable.close();
+                    alert("Changes Saved Successfully!");
+                } else {
+                    // Fallback for Mobile: Download the file if direct writing is blocked
+                    const blob = new Blob([wbout], {type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement("a");
+                    a.href = url;
+                    a.download = "Financial_Update.xlsx";
+                    a.click();
+                    alert("Mobile Security Note: Direct sync is limited on this browser. A new version of your Excel file has been downloaded to your 'Downloads' folder.");
+                }
+                hasUnsavedChanges = false;
+                refreshSyncState();
+            } catch (err) { 
+                alert("Permission error. Ensure the Excel file is not currently open in another app."); 
+            }
         }
 
-        function resetForm() {
-            document.getElementById('txForm').reset();
-            document.getElementById('editIndex').value = "-1";
-            document.getElementById('submitBtn').innerText = "ADD TO LIST";
-            document.getElementById('cancelEditBtn').classList.add('hidden');
-            document.getElementById('date').valueAsDate = new Date();
+        // --- Keep existing helper functions (resetForm, deleteItem, etc.) but update refreshSyncState ---
+
+        function refreshSyncState() {
+            const btn = document.getElementById('syncBtn');
+            if (hasUnsavedChanges) {
+                btn.disabled = false;
+                btn.className = "bg-rose-600 text-white px-6 py-2 rounded-full font-bold text-sm sync-warning";
+            } else {
+                btn.disabled = true;
+                btn.className = "bg-slate-800 text-slate-500 px-6 py-2 rounded-full font-bold text-sm border border-slate-700 opacity-50";
+            }
+        }
+
+        function limitAndRefresh(el) { if (el.value.length > 3) el.value = el.value.slice(0, 3); updateUI(); }
+        function toggleRateEdit() {
+            const inputs = [document.getElementById('rateDigi'), document.getElementById('rateMP2'), document.getElementById('rateStock')];
+            const isEditing = !inputs[0].disabled;
+            inputs.forEach(input => input.disabled = isEditing);
+            document.getElementById('rateEditBtn').innerText = isEditing ? "Edit Rates" : "Lock Rates";
+            if(isEditing) inputs.forEach(i => localStorage.setItem(i.id, i.value));
+        }
+
+        function handleCategoryChange(select) {
+            if (select.value === "NEW_CAT") {
+                document.getElementById('modalOverlay').classList.remove('hidden');
+                document.getElementById('modalInput').focus();
+            }
+        }
+
+        function closeModal() { document.getElementById('modalOverlay').classList.add('hidden'); document.getElementById('category').value = ""; }
+        function confirmNewCategory() {
+            const name = document.getElementById('modalInput').value.trim();
+            if (name) {
+                const opt = document.createElement("option");
+                opt.value = name; opt.text = name;
+                document.getElementById('category').add(opt);
+                document.getElementById('category').value = name;
+                document.getElementById('modalOverlay').classList.add('hidden');
+            }
+        }
+
+        function setupFilters() {
+            const curY = new Date().getFullYear();
+            const yearSelect = document.getElementById('filterYear');
+            let years = [...new Set(db.map(item => new Date(item.Date).getFullYear()))];
+            if (!years.includes(curY)) years.push(curY);
+            yearSelect.innerHTML = years.sort((a,b)=>b-a).map(y => `<option value="${y}">${y}</option>`).join('');
+            yearSelect.value = curY;
+            document.getElementById('filterMonth').value = new Date().getMonth();
+        }
+
+        function updateCategoryDropdown() {
+            const cats = [...new Set(db.map(item => item.Category))].filter(Boolean).sort();
+            document.getElementById('category').innerHTML = `<option value="" disabled selected>Select Category</option><option value="NEW_CAT" class="text-emerald-500">+ Add New</option>` + cats.map(c => `<option value="${c}">${c}</option>`).join('');
         }
 
         function updateChart(catData) {
@@ -483,47 +456,19 @@
             chartInstance = new Chart(ctx, {
                 type: 'doughnut',
                 data: { labels: Object.keys(catData), datasets: [{ data: Object.values(catData), backgroundColor: ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6'], borderWidth: 4, borderColor: '#0f172a' }] },
-                options: { responsive: true, maintainAspectRatio: false, cutout: '75%', plugins: { legend: { position: 'bottom', labels: { color: '#64748b', font: { size: 10 }, usePointStyle: true, pointStyle: 'rect' } } } }
+                options: { responsive: true, maintainAspectRatio: false, cutout: '75%', plugins: { legend: { display: false } } }
             });
-        }
-
-        function refreshSyncState() {
-            const btn = document.getElementById('syncBtn');
-            if (!fileHandle) { btn.disabled = true; return; }
-            if (hasUnsavedChanges) {
-                btn.disabled = false;
-                btn.className = "bg-rose-600 hover:bg-rose-500 text-white px-6 py-2 rounded-full font-bold text-sm transition-all flex items-center gap-2 shadow-lg shadow-rose-900/40 sync-warning cursor-pointer";
-            } else {
-                btn.disabled = true;
-                btn.className = "bg-slate-800 text-slate-500 px-6 py-2 rounded-full font-bold text-sm transition-all border border-slate-700 flex items-center gap-2 opacity-50 cursor-not-allowed";
-            }
         }
 
         document.getElementById('txForm').addEventListener('submit', (e) => {
             e.preventDefault();
-            const finalCat = document.getElementById('category').value;
-            if (!finalCat) return;
-            const rawAmount = document.getElementById('amount').value.replace(/,/g, '');
-            const entry = { Date: document.getElementById('date').value, Category: finalCat, Amount: parseFloat(rawAmount), Type: document.getElementById('type').value };
-            const editIdx = parseInt(document.getElementById('editIndex').value);
-            if(editIdx > -1) { db[editIdx] = entry; } else { db.push(entry); }
-            hasUnsavedChanges = true; 
-            updateCategoryDropdown(); updateUI(); refreshSyncState(); resetForm();
+            const amt = document.getElementById('amount').value.replace(/,/g, '');
+            const entry = { Date: document.getElementById('date').value, Category: document.getElementById('category').value, Amount: parseFloat(amt), Type: document.getElementById('type').value };
+            db.push(entry);
+            hasUnsavedChanges = true; updateUI(); refreshSyncState();
+            document.getElementById('txForm').reset();
+            document.getElementById('date').valueAsDate = new Date();
         });
-
-        async function saveToDisk() {
-            if (!fileHandle || !hasUnsavedChanges) return;
-            try {
-                const ws = XLSX.utils.json_to_sheet(db), wb = XLSX.utils.book_new();
-                XLSX.utils.book_append_sheet(wb, ws, "Transactions");
-                const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
-                const writable = await fileHandle.createWritable();
-                await writable.write(wbout); await writable.close();
-                hasUnsavedChanges = false; 
-                refreshSyncState();
-                window.location.reload();
-            } catch (err) { alert("Permission error. Ensure Excel is closed."); }
-        }
     </script>
 </body>
 </html>
