@@ -484,18 +484,46 @@
             document.getElementById('date').valueAsDate = new Date();
         }
 
-        // Updated Function: Generates unique colors dynamically for any number of categories
+// Updated Function: Dynamic colors + Center Text Label
         function updateChart(catData) {
             const ctx = document.getElementById('mainChart').getContext('2d');
             if(chartInstance) chartInstance.destroy();
             
             const categories = Object.keys(catData);
+            const totalValue = Object.values(catData).reduce((a, b) => a + b, 0);
             
-            // Internal logic to generate unique HSL colors based on category count
+            // Generate unique HSL colors based on category count
             const colors = categories.map((_, i) => {
                 const hue = (i * (360 / categories.length)) % 360;
-                return `hsl(${hue}, 75%, 60%)`;
+                return `hsl(${hue}, 70%, 50%)`;
             });
+
+            // Custom Plugin to draw text in the center
+            const centerTextPlugin = {
+                id: 'centerText',
+                afterDraw: (chart) => {
+                    const { ctx, chartArea: { top, bottom, left, right, width, height } } = chart;
+                    ctx.save();
+                    
+                    // Draw "TOTAL" label
+                    ctx.font = 'bold 10px sans-serif';
+                    ctx.fillStyle = '#64748b'; // Slate-500
+                    ctx.textAlign = 'center';
+                    ctx.fillText('TOTAL EXPENSES', width / 2, height / 2 + top - 10);
+
+                    // Draw the actual Amount
+                    ctx.font = 'bold 16px monospace';
+                    ctx.fillStyle = '#f8fafc'; // Slate-50
+                    const formattedTotal = new Intl.NumberFormat('en-PH', { 
+                        style: 'currency', 
+                        currency: 'PHP',
+                        maximumFractionDigits: 0 
+                    }).format(totalValue);
+                    ctx.fillText(formattedTotal, width / 2, height / 2 + top + 10);
+                    
+                    ctx.restore();
+                }
+            };
 
             chartInstance = new Chart(ctx, {
                 type: 'doughnut',
@@ -523,7 +551,8 @@
                             } 
                         } 
                     } 
-                }
+                },
+                plugins: [centerTextPlugin] // Register the plugin here
             });
         }
 
