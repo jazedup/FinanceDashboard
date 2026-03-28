@@ -21,7 +21,6 @@
         }
         .sync-warning { animation: pulse-red 2s infinite; }
         select { cursor: pointer; padding-right: 2.5rem !important; }
-        /* Updated Rate Input Styling */
         .rate-input { 
             background: transparent; 
             border-bottom: 1px dashed #334155; 
@@ -37,7 +36,7 @@
 <body class="bg-slate-950 text-slate-100 p-4 md:p-8">
 
     <div id="modalOverlay" class="fixed inset-0 bg-slate-950/60 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-slate-900 border border-slate-800 p-6 rounded-3xl shadow-2xl w-full max-w-sm">
+        <div class="bg-slate-900 border border-slate-800 p-6 rounded-3xl shadow-2xl w-full max-sm">
             <center><h3 class="text-xl font-bold text-emerald-500 mb-2">New Category</h3></center>
             <input type="text" id="modalInput" placeholder="e.g., Subscriptions" class="w-full bg-slate-800 border-none rounded-xl p-4 text-white outline-none mb-4 ring-2 ring-transparent focus:ring-emerald-500 transition-all">
             <div class="flex gap-3">
@@ -48,7 +47,7 @@
     </div>
 
     <div id="deleteModalOverlay" class="fixed inset-0 bg-slate-950/60 backdrop-blur-md z-[60] hidden flex items-center justify-center p-4">
-        <div class="bg-slate-900 border border-slate-800 p-6 rounded-3xl shadow-2xl w-full max-w-sm">
+        <div class="bg-slate-900 border border-slate-800 p-6 rounded-3xl shadow-2xl w-full max-sm">
            <center><h3 class="text-xl font-bold text-rose-500 mb-2">Delete Entry?</h3></center>
             <div id="deleteItemDetails" class="bg-slate-950/50 rounded-2xl p-4 mb-6 border border-slate-800 text-center">
                 <p id="delInfoDate" class="text-[10px] text-slate-500 font-mono"></p>
@@ -485,13 +484,46 @@
             document.getElementById('date').valueAsDate = new Date();
         }
 
+        // Updated Function: Generates unique colors dynamically for any number of categories
         function updateChart(catData) {
             const ctx = document.getElementById('mainChart').getContext('2d');
             if(chartInstance) chartInstance.destroy();
+            
+            const categories = Object.keys(catData);
+            
+            // Internal logic to generate unique HSL colors based on category count
+            const colors = categories.map((_, i) => {
+                const hue = (i * (360 / categories.length)) % 360;
+                return `hsl(${hue}, 75%, 60%)`;
+            });
+
             chartInstance = new Chart(ctx, {
                 type: 'doughnut',
-                data: { labels: Object.keys(catData), datasets: [{ data: Object.values(catData), backgroundColor: ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6'], borderWidth: 4, borderColor: '#0f172a' }] },
-                options: { responsive: true, maintainAspectRatio: false, cutout: '75%', plugins: { legend: { position: 'bottom', labels: { color: '#64748b', font: { size: 10 }, usePointStyle: true, pointStyle: 'rect' } } } }
+                data: { 
+                    labels: categories, 
+                    datasets: [{ 
+                        data: Object.values(catData), 
+                        backgroundColor: colors, 
+                        borderWidth: 4, 
+                        borderColor: '#0f172a' 
+                    }] 
+                },
+                options: { 
+                    responsive: true, 
+                    maintainAspectRatio: false, 
+                    cutout: '75%', 
+                    plugins: { 
+                        legend: { 
+                            position: 'bottom', 
+                            labels: { 
+                                color: '#64748b', 
+                                font: { size: 10 }, 
+                                usePointStyle: true, 
+                                pointStyle: 'rect' 
+                            } 
+                        } 
+                    } 
+                }
             });
         }
 
