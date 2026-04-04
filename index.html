@@ -26,36 +26,23 @@
         const app = initializeApp(firebaseConfig);
         const db_fb = getDatabase(app);
 
-        // Export to window so regular script tags can access Firebase
+        // Export Firebase to window
         window.fb = { db_fb, ref, set, onValue, push, remove, update, get, child };
+        
+        // CRITICAL: Signal that Firebase is ready
+        window.dispatchEvent(new Event('firebase-ready'));
     </script>
 
     <style>
         body { transition: background-color 0.4s ease; }
         .light-mode { background-color: #f1f5f9; }
         .dark-mode { background-color: #020617; }
-        .custom-scrollbar::-webkit-scrollbar { width: 5px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
-        .action-btn { opacity: 0; transition: opacity 0.2s; }
-        tr:hover .action-btn { opacity: 1; }
-        @keyframes spin { to { transform: rotate(360deg); } }
         .animate-spin { animation: spin 1s linear infinite; }
-        .price-animate { animation: price-swap 0.5s cubic-bezier(0.4, 0, 0.2, 1); }
-        @keyframes price-swap {
-            0% { opacity: 1; transform: translateY(0); }
-            45% { opacity: 0; transform: translateY(-8px); }
-            55% { opacity: 0; transform: translateY(8px); }
-            100% { opacity: 1; transform: translateY(0); }
-        }
+        @keyframes spin { to { transform: rotate(360deg); } }
         .rate-input { background: transparent; border-bottom: 1px dashed #334155; text-align: center; outline: none; width: 4ch; }
-        .rate-input:focus { border-bottom-color: #10b981; color: #10b981; }
-        .rate-input:disabled { border-bottom-color: transparent; color: inherit; cursor: default; }
-        #customLegendTooltip { position: fixed; display: none; background: rgba(15, 23, 42, 0.98); border: 1px solid #334155; padding: 12px; border-radius: 12px; z-index: 9999; pointer-events: none; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.7); max-height: 80vh; overflow-y: auto; min-width: 140px; }
     </style>
 </head>
 <body class="dark-mode text-slate-100 p-4 md:p-8">
-
-    <div id="customLegendTooltip" class="text-[10px] font-mono text-white custom-scrollbar"></div>
 
     <div id="loadingScreen" class="fixed inset-0 bg-slate-950 z-[200] flex flex-col items-center justify-center">
         <div class="w-12 h-12 border-4 border-emerald-500/20 border-t-emerald-500 rounded-full animate-spin mb-4"></div>
@@ -65,294 +52,139 @@
     <div id="authOverlay" class="fixed inset-0 bg-slate-950 z-[100] flex items-center justify-center p-4">
         <div class="bg-slate-900 border border-slate-800 p-8 rounded-3xl shadow-2xl w-full max-w-[400px]">
             <h2 class="text-3xl font-black text-emerald-500 mb-6 italic text-center uppercase tracking-tighter">Finance Analytics</h2>
-            <div class="flex border-b border-slate-800 mb-8">
-                <button id="tabLogin" onclick="switchAuthTab('login')" class="flex-1 py-3 text-[10px] font-black uppercase tracking-widest border-b-2 border-emerald-500 text-emerald-500">Login</button>
-                <button id="tabSignup" onclick="switchAuthTab('signup')" class="flex-1 py-3 text-[10px] font-black uppercase tracking-widest text-slate-500">Register</button>
-            </div>
             <div class="space-y-4">
                 <input type="text" id="authUsername" placeholder="Username" class="w-full bg-slate-800 border-none rounded-xl p-4 text-white outline-none focus:ring-2 focus:ring-emerald-500">
-                <input type="password" id="authPass" onkeydown="if(event.key==='Enter') handleAuthAction()" placeholder="Password" class="w-full bg-slate-800 border-none rounded-xl p-4 text-white outline-none focus:ring-2 focus:ring-emerald-500">
-                <p id="authError" class="text-rose-500 text-xs font-bold text-center hidden"></p>
-                <button id="authPrimaryBtn" onclick="handleAuthAction()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white py-4 rounded-xl font-black uppercase transition-all shadow-lg">Login Dashboard</button>
+                <input type="password" id="authPass" placeholder="Password" class="w-full bg-slate-800 border-none rounded-xl p-4 text-white outline-none focus:ring-2 focus:ring-emerald-500">
+                <button onclick="handleAuthAction()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white py-4 rounded-xl font-black uppercase transition-all shadow-lg">Login Dashboard</button>
             </div>
         </div>
     </div>
 
     <div id="mainDashboard" class="max-w-6xl mx-auto hidden">
-        <header class="flex flex-col gap-6 mb-8 border-b border-slate-800 pb-6">
-            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                <h1 id="mainTitle" class="text-3xl font-black text-emerald-500 tracking-tighter italic">Financial Analytics</h1>
-                <div class="flex items-center gap-2">
-                    <button onclick="toggleTheme()" class="p-3 bg-slate-900 border border-slate-800 rounded-xl"><span id="themeIcon">🌙</span></button>
-                    <button onclick="handleLogout()" class="p-3 bg-slate-900 border border-slate-800 rounded-xl text-rose-500 font-bold text-xs uppercase">Logout</button>
-                </div>
-            </div>
-            <div class="flex flex-wrap items-center gap-4 bg-slate-900 p-4 rounded-2xl border border-slate-800">
-                <select id="filterYear" onchange="updateUI()" class="bg-slate-800 rounded-lg p-2 text-sm text-white outline-none w-32"></select>
-                <select id="filterMonth" onchange="updateUI()" class="bg-slate-800 rounded-lg p-2 text-sm text-white outline-none w-40">
-                    <option value="all">Full Year (All)</option>
-                    <option value="0">January</option><option value="1">February</option>
-                    <option value="2">March</option><option value="3">April</option>
-                    <option value="4">May</option><option value="5">June</option>
-                    <option value="6">July</option><option value="7">August</option>
-                    <option value="8">September</option><option value="9">October</option>
-                    <option value="10">November</option><option value="11">December</option>
-                </select>
-            </div>
+        <header class="flex justify-between items-center mb-8 border-b border-slate-800 pb-6">
+            <h1 class="text-3xl font-black text-emerald-500 tracking-tighter italic">Financial Analytics</h1>
+            <button onclick="handleLogout()" class="text-xs font-bold text-rose-500 uppercase">Logout</button>
         </header>
 
         <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
-            <div class="lg:col-span-1 space-y-6">
-                <section class="bg-slate-900 p-6 rounded-2xl border border-slate-800">
-                    <h2 class="text-lg font-bold mb-4 text-emerald-500 uppercase">Log Entry</h2>
-                    <form id="txForm" class="space-y-4">
-                        <input type="hidden" id="editId" value="">
-                        <input type="date" id="date" required class="w-full bg-slate-800 border-none rounded-lg p-3 text-sm text-white">
-                        <select id="category" required onchange="handleCategoryChange(this)" class="w-full bg-slate-800 border-none rounded-lg p-3 text-sm text-white">
-                            <option value="" disabled selected>Select Category</option>
-                            <option value="NEW_CAT" class="text-emerald-500 font-bold">+ Add New Category</option>
-                        </select>
-                        <input type="text" id="amount" placeholder="Amount" required oninput="formatInputAmount(this)" class="w-full bg-slate-800 border-none rounded-lg p-3 text-sm text-white font-mono">
-                        <select id="type" class="w-full bg-slate-800 border-none rounded-lg p-3 text-sm text-white">
-                            <option value="Expense">Expense</option>
-                            <option value="Profit">Profit</option>
-                        </select>
-                        <button type="submit" id="submitBtn" class="w-full bg-emerald-600 text-white py-4 rounded-xl font-black text-sm uppercase">Add Entry</button>
-                    </form>
-                </section>
-
-                <section class="bg-slate-900 p-6 rounded-2xl border border-emerald-900/30 shadow-2xl">
-                    <div class="flex items-center justify-between mb-4">
-                        <h2 class="text-lg font-black text-emerald-400 uppercase">Yield Pool</h2>
-                        <button onclick="toggleRateEdit()" id="rateEditBtn" class="text-[10px] font-bold text-slate-500">Edit Rates</button>
-                    </div>
-                    <div class="space-y-6">
-                        <div>
-                            <p class="text-[10px] text-slate-500 uppercase font-black">Max Investable</p>
-                            <p id="poolMax" class="text-2xl font-mono text-white font-black">&#8369;0.00</p>
-                        </div>
-                        <div class="space-y-3 pt-4 border-t border-slate-800">
-                            <div class="flex justify-between text-xs">
-                                <span class="text-slate-400">(<input type="text" id="rateDigi" value="6" class="rate-input" disabled>%) Digital</span>
-                                <span id="yieldDigi" class="font-mono text-emerald-500">+&#8369;0.00</span>
-                            </div>
-                            <div class="flex justify-between text-xs">
-                                <span class="text-slate-400">(<input type="text" id="rateMP2" value="7" class="rate-input" disabled>%) MP2</span>
-                                <span id="yieldMP2" class="font-mono text-emerald-500">+&#8369;0.00</span>
-                            </div>
-                        </div>
-                    </div>
-                </section>
-            </div>
+            <section class="bg-slate-900 p-6 rounded-2xl border border-slate-800">
+                <form id="txForm" class="space-y-4">
+                    <input type="date" id="date" required class="w-full bg-slate-800 rounded-lg p-3 text-white">
+                    <select id="category" required class="w-full bg-slate-800 rounded-lg p-3 text-white">
+                        <option value="" disabled selected>Category</option>
+                        <option value="Food">Food</option>
+                        <option value="Bills">Bills</option>
+                        <option value="Salary">Salary</option>
+                    </select>
+                    <input type="text" id="amount" placeholder="0.00" oninput="formatInputAmount(this)" required class="w-full bg-slate-800 rounded-lg p-3 text-white font-mono">
+                    <select id="type" class="w-full bg-slate-800 rounded-lg p-3 text-white">
+                        <option value="Expense">Expense</option>
+                        <option value="Profit">Profit</option>
+                    </select>
+                    <button type="submit" class="w-full bg-emerald-600 text-white py-4 rounded-xl font-black">Add Entry</button>
+                </form>
+            </section>
 
             <div class="lg:col-span-3 space-y-6">
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div class="bg-slate-900 p-5 rounded-2xl border border-slate-800">
-                        <p class="text-[10px] text-emerald-500 uppercase font-black">Net Cash</p>
-                        <p class="text-2xl font-mono text-white mt-1"><span id="statNet">0.00</span></p>
-                    </div>
-                    <div class="bg-slate-900 p-5 rounded-2xl border border-slate-800">
-                        <p class="text-[10px] text-emerald-500 uppercase font-black">Current Flow</p>
-                        <p class="text-2xl font-mono text-white mt-1"><span id="statExp">0.00</span></p>
-                    </div>
-                    <div class="bg-slate-900 p-5 rounded-2xl border border-slate-800">
-                        <p class="text-[10px] text-emerald-500 uppercase font-black">Prev Flow</p>
-                        <p class="text-2xl font-mono text-white mt-1"><span id="statPrevYear">0.00</span></p>
+                        <p class="text-[10px] text-emerald-500 uppercase font-black">Net Balance</p>
+                        <p id="statNet" class="text-2xl font-mono text-white mt-1">&#8369;0.00</p>
                     </div>
                 </div>
-
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div class="bg-slate-900 rounded-2xl border border-slate-800 overflow-hidden min-h-[400px]">
-                        <div class="p-3 bg-slate-800/30 text-[10px] font-black uppercase border-b border-slate-800 text-emerald-500">History</div>
-                        <div class="h-[350px] overflow-y-auto custom-scrollbar">
-                            <table class="w-full text-[11px] text-left">
-                                <tbody id="tableBody"></tbody>
-                            </table>
-                        </div>
-                    </div>
-                    <div class="bg-slate-900 p-6 rounded-2xl border border-slate-800 min-h-[400px]">
-                        <p id="chartTitle" class="text-[10px] font-black uppercase text-emerald-500 mb-4">Distribution</p>
-                        <div class="h-64 relative"><canvas id="mainChart"></canvas></div>
-                    </div>
+                <div class="bg-slate-900 rounded-2xl border border-slate-800 overflow-hidden h-64 overflow-y-auto">
+                    <table class="w-full text-xs text-left">
+                        <tbody id="tableBody"></tbody>
+                    </table>
                 </div>
-            </div>
-        </div>
-    </div>
-
-    <div id="modalOverlay" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-[110] hidden flex items-center justify-center p-4">
-        <div class="bg-slate-900 border border-slate-800 p-6 rounded-3xl w-full max-w-sm">
-            <h3 class="text-xl font-bold text-emerald-500 mb-4 text-center">New Category</h3>
-            <input type="text" id="modalInput" maxlength="10" class="w-full bg-slate-800 border-none rounded-xl p-4 text-white outline-none mb-4">
-            <div class="flex gap-3">
-                <button onclick="closeModal()" class="flex-1 px-4 py-3 rounded-xl bg-slate-800 text-slate-400 uppercase text-xs">Cancel</button>
-                <button onclick="confirmNewCategory()" class="flex-1 px-4 py-3 rounded-xl bg-emerald-600 text-white uppercase text-xs">Create</button>
             </div>
         </div>
     </div>
 
     <script>
-        let db_raw = {};
-        let chartInstance = null;
         let currentUser = null;
-        let currentAuthMode = 'login';
         
-        // Correct way to handle formatting without special characters in strings
+        // This ensures the currency sign is ALWAYS handled by the browser's engine
         const phFormat = new Intl.NumberFormat('en-PH', { 
             style: 'currency', 
-            currency: 'PHP'
+            currency: 'PHP' 
         });
 
-        window.addEventListener('load', () => {
-            const check = setInterval(() => {
-                if (window.fb) {
-                    clearInterval(check);
-                    document.getElementById('loadingScreen').classList.add('hidden');
-                    const savedUser = localStorage.getItem('finance_user');
-                    if (savedUser) { currentUser = savedUser; enterDashboard(); }
-                }
-            }, 100);
+        // WAIT for the Firebase module to signal it is ready
+        window.addEventListener('firebase-ready', () => {
+            document.getElementById('loadingScreen').classList.add('hidden');
+            const savedUser = localStorage.getItem('finance_user');
+            if (savedUser) { 
+                currentUser = savedUser; 
+                enterDashboard(); 
+            }
         });
 
         function enterDashboard() {
             localStorage.setItem('finance_user', currentUser);
             document.getElementById('authOverlay').classList.add('hidden');
             document.getElementById('mainDashboard').classList.remove('hidden');
-            initDataSync(currentUser);
+            initDataSync();
         }
 
         async function handleAuthAction() {
             const user = document.getElementById('authUsername').value.trim().toLowerCase();
             const pass = document.getElementById('authPass').value.trim();
             if(!user || !pass) return;
-            
+
+            // Using window.fb which was exported by the module
             const userRef = window.fb.ref(window.fb.db_fb, 'users/' + user);
             const snapshot = await window.fb.get(userRef);
             
-            if (currentAuthMode === 'signup') {
-                if (snapshot.exists()) { alert("User exists"); return; }
-                await window.fb.set(window.fb.ref(window.fb.db_fb, 'users/' + user + '/password'), pass);
-                currentUser = user; enterDashboard();
+            if (snapshot.exists() && snapshot.val().password === pass) {
+                currentUser = user;
+                enterDashboard();
             } else {
-                const data = snapshot.val();
-                if (!snapshot.exists() || data.password !== pass) { alert("Invalid login"); return; }
-                currentUser = user; enterDashboard();
+                alert("Access Denied");
             }
         }
 
-        function switchAuthTab(mode) {
-            currentAuthMode = mode;
-            document.getElementById('tabLogin').className = mode === 'login' ? 'flex-1 py-3 text-[10px] font-black uppercase border-b-2 border-emerald-500 text-emerald-500' : 'flex-1 py-3 text-[10px] font-black uppercase text-slate-500';
-            document.getElementById('tabSignup').className = mode === 'signup' ? 'flex-1 py-3 text-[10px] font-black uppercase border-b-2 border-emerald-500 text-emerald-500' : 'flex-1 py-3 text-[10px] font-black uppercase text-slate-500';
-            document.getElementById('authPrimaryBtn').innerText = mode === 'login' ? "Login Dashboard" : "Register Account";
-        }
-
-        function initDataSync(username) {
-            const txRef = window.fb.ref(window.fb.db_fb, 'users/' + username + '/transactions');
+        function initDataSync() {
+            const txRef = window.fb.ref(window.fb.db_fb, `users/${currentUser}/transactions`);
             window.fb.onValue(txRef, (snapshot) => {
-                db_raw = snapshot.val() || {};
-                setupFilters();
-                updateUI();
+                const data = snapshot.val() || {};
+                updateUI(data);
             });
         }
 
-        function setupFilters() {
-            const selectYear = document.getElementById('filterYear');
-            if (selectYear.options.length > 0) return;
-            const years = [new Date().getFullYear()];
-            Object.values(db_raw).forEach(i => { years.push(new Date(i.Date).getFullYear()); });
-            const uniqueYears = [...new Set(years)].sort((a,b)=>b-a);
-            selectYear.innerHTML = uniqueYears.map(y => `<option value="${y}">${y}</option>`).join('');
-            document.getElementById('filterMonth').value = new Date().getMonth().toString();
-        }
-
-        function updateUI() {
-            const year = parseInt(document.getElementById('filterYear').value);
-            const month = document.getElementById('filterMonth').value;
+        function updateUI(data) {
             const body = document.getElementById('tableBody');
             body.innerHTML = '';
+            let total = 0;
 
-            let net = 0, cur = 0, prev = 0;
-            const chartData = {};
-
-            Object.entries(db_raw).forEach(([id, item]) => {
-                const d = new Date(item.Date);
-                const amt = parseFloat(item.Amount) || 0;
+            Object.values(data).forEach(item => {
+                const amt = parseFloat(item.Amount);
                 const isExp = item.Type === 'Expense';
-                
-                isExp ? net -= amt : net += amt;
+                isExp ? total -= amt : total += amt;
 
-                if (d.getFullYear() === year && (month === 'all' || d.getMonth() === parseInt(month))) {
-                    isExp ? cur -= amt : cur += amt;
-                    if(isExp) chartData[item.Category] = (chartData[item.Category] || 0) + amt;
-                    
-                    body.insertAdjacentHTML('afterbegin', `
-                        <tr class="border-b border-slate-800/50">
-                            <td class="p-3 text-slate-500 font-mono text-[9px] uppercase">${item.Date}</td>
-                            <td class="p-3 font-bold uppercase">${item.Category}</td>
-                            <td class="p-3 text-right font-mono ${isExp ? 'text-rose-500' : 'text-emerald-400'}">${phFormat.format(amt)}</td>
-                        </tr>`);
-                }
-
-                if (d.getFullYear() === year - 1 && (month === 'all' || d.getMonth() === parseInt(month))) {
-                    isExp ? prev -= amt : prev += amt;
-                }
+                body.insertAdjacentHTML('afterbegin', `
+                    <tr class="border-b border-slate-800/50">
+                        <td class="p-4 text-slate-500">${item.Date}</td>
+                        <td class="p-4 font-bold">${item.Category}</td>
+                        <td class="p-4 text-right font-mono ${isExp ? 'text-rose-500' : 'text-emerald-400'}">
+                            ${phFormat.format(amt)}
+                        </td>
+                    </tr>
+                `);
             });
-
-            document.getElementById('statNet').innerText = phFormat.format(net);
-            document.getElementById('statExp').innerText = phFormat.format(cur);
-            document.getElementById('statPrevYear').innerText = phFormat.format(prev);
-            
-            const investable = net > 0 ? net : 0;
-            document.getElementById('poolMax').innerText = phFormat.format(investable);
-            
-            const rD = (parseFloat(document.getElementById('rateDigi').value) || 0) / 100;
-            document.getElementById('yieldDigi').innerText = "+" + phFormat.format(investable * rD);
-
-            updateChart(chartData);
+            document.getElementById('statNet').innerText = phFormat.format(total);
         }
 
-        function updateChart(data) {
-            const ctx = document.getElementById('mainChart').getContext('2d');
-            if(chartInstance) chartInstance.destroy();
-            if(Object.keys(data).length === 0) return;
-
-            chartInstance = new Chart(ctx, {
-                type: 'doughnut',
-                data: {
-                    labels: Object.keys(data),
-                    datasets: [{
-                        data: Object.values(data),
-                        backgroundColor: ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6'],
-                        borderWidth: 0
-                    }]
-                },
-                options: { maintainAspectRatio: false, plugins: { legend: { display: false } } }
-            });
-        }
-
-        function handleCategoryChange(select) {
-            if (select.value === "NEW_CAT") { document.getElementById('modalOverlay').classList.remove('hidden'); }
-        }
-
-        function confirmNewCategory() {
-            const name = document.getElementById('modalInput').value.trim();
-            if (name) {
-                const select = document.getElementById('category');
-                select.add(new Option(name, name), select.options[select.options.length - 1]);
-                select.value = name;
-                closeModal();
-            }
-        }
-
-        function closeModal() { document.getElementById('modalOverlay').classList.add('hidden'); }
-        
         function formatInputAmount(input) {
             let val = input.value.replace(/[^0-9.]/g, '');
             input.value = val.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
         }
 
-        function handleLogout() { localStorage.removeItem('finance_user'); location.reload(); }
-        
+        function handleLogout() {
+            localStorage.removeItem('finance_user');
+            location.reload();
+        }
+
         document.getElementById('txForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const entry = {
@@ -363,10 +195,7 @@
             };
             await window.fb.push(window.fb.ref(window.fb.db_fb, `users/${currentUser}/transactions`), entry);
             e.target.reset();
-            updateUI();
         });
-
-        document.getElementById('date').valueAsDate = new Date();
     </script>
 </body>
 </html>
