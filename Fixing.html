@@ -100,12 +100,17 @@
             pointer-events: auto;
         }
 
-        /* NEW: Glowing emerald border for edit mode - only appears when editing */
+        /* Log Entry glowing edit border (previous feature) */
         #logEntrySection.edit-mode {
             border-color: #10b981 !important;
             box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.4),
                         0 0 20px rgba(16, 185, 129, 0.3);
             transition: all 0.3s ease;
+        }
+
+        /* NEW: Inactivity modal styling (minimal) */
+        #inactivityModal .modal-content {
+            animation: pulse 1.5s infinite;
         }
     </style>
 </head>
@@ -127,7 +132,18 @@
             </div>
             <div class="space-y-4">
                 <input type="text" id="authUsername" placeholder="Username" class="w-full bg-slate-800 border-none rounded-xl p-4 text-white outline-none focus:ring-2 focus:ring-emerald-500 transition-all">
-                <input type="password" id="authPass" onkeydown="if(event.key==='Enter') handleAuthAction()" placeholder="Password" class="w-full bg-slate-800 border-none rounded-xl p-4 text-white outline-none focus:ring-2 focus:ring-emerald-500 transition-all">
+                
+                <!-- NEW: Password field with visibility toggle (minimal change) -->
+                <div class="relative">
+                    <input type="password" id="authPass" onkeydown="if(event.key==='Enter') handleAuthAction()" placeholder="Password" class="w-full bg-slate-800 border-none rounded-xl p-4 text-white outline-none focus:ring-2 focus:ring-emerald-500 transition-all pr-12">
+                    <button onclick="togglePasswordVisibility()" class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-emerald-400 transition-colors">
+                        <svg id="eyeIcon" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5 16.477 5 20.268 7.943 21.542 12 20.268 16.057 16.477 19 12 19 7.523 19 3.732 16.057 2.458 12z" />
+                        </svg>
+                    </button>
+                </div>
+
                 <p id="authError" class="text-rose-500 text-xs font-bold text-center hidden"></p>
                 <button id="authPrimaryBtn" onclick="handleAuthAction()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white py-4 rounded-xl font-black uppercase transition-all shadow-lg shadow-emerald-900/20">Login Dashboard</button>
             </div>
@@ -184,7 +200,6 @@
 
         <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 items-stretch">
             <div class="lg:col-span-1 flex flex-col gap-6 h-full">
-                <!-- Log Entry section with ID and glowing edit indicator -->
                 <section id="logEntrySection" class="bg-slate-900 p-6 rounded-2xl border border-slate-800 flex-1 flex flex-col">
                     <h2 class="text-lg font-bold mb-4 text-emerald-500 uppercase tracking-tight">Log Entry</h2>
                     <form id="txForm" class="space-y-4 flex-grow flex flex-col justify-between">
@@ -288,6 +303,7 @@
         </div>
     </div>
 
+    <!-- Existing modals unchanged -->
     <div id="settingsModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-[110] hidden flex items-center justify-center p-4">
         <div class="bg-slate-900 border border-slate-800 p-8 rounded-3xl shadow-2xl w-full max-w-sm text-center">
             <h3 class="text-xl font-black text-emerald-500 mb-6 uppercase tracking-tight italic">Account Settings</h3>
@@ -340,6 +356,16 @@
         </div>
     </div>
 
+    <!-- NEW: Inactivity timeout modal (minimal addition) -->
+    <div id="inactivityModal" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-[200] hidden flex items-center justify-center p-4">
+        <div class="modal-content bg-slate-900 border border-emerald-500/30 p-8 rounded-3xl shadow-2xl w-full max-w-sm text-center">
+            <div class="w-12 h-12 mx-auto mb-4 flex items-center justify-center text-4xl">⏳</div>
+            <h3 class="text-xl font-black text-emerald-500 mb-2 uppercase tracking-tight">Session Timeout</h3>
+            <p class="text-slate-400 text-sm mb-6">You have been inactive for 1 minute.<br>You will be logged out in <span id="countdownDisplay" class="font-mono text-2xl text-white">30</span>s</p>
+            <button onclick="cancelInactivityLogout()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white py-4 rounded-xl font-black uppercase transition-all">OK - Keep Me Logged In</button>
+        </div>
+    </div>
+
     <script>
         let db_raw = {};
         let chartInstance = null;
@@ -348,6 +374,10 @@
         let currentAuthMode = 'login';
         let currentChartView = 0; 
         let yoYTimeout = null;
+        
+        // NEW: Inactivity timeout variables
+        let inactivityTimer = null;
+        let countdownInterval = null;
         
         const phFormat = new Intl.NumberFormat('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
@@ -531,9 +561,17 @@
             document.getElementById('mainDashboard').classList.remove('hidden');
             document.getElementById('userDisplay').innerText = `logged as: ${currentUser}`;
             initDataSync(currentUser);
+            startInactivityListener(); // NEW: start inactivity monitoring once logged in
         }
 
-        function handleLogout() { localStorage.removeItem('finance_user'); location.reload(); }
+        function handleLogout() {
+            // NEW: clear any running timers on logout
+            if (inactivityTimer) clearTimeout(inactivityTimer);
+            if (countdownInterval) clearInterval(countdownInterval);
+            document.getElementById('inactivityModal').classList.add('hidden');
+            localStorage.removeItem('finance_user'); 
+            location.reload(); 
+        }
 
         function initDataSync(username) {
             const txRef = window.fb.ref(window.fb.db_fb, 'users/' + username + '/transactions');
@@ -709,7 +747,6 @@
             document.getElementById('amount').value = item.Amount.toLocaleString(); document.getElementById('type').value = item.Type;
             document.getElementById('editId').value = id; document.getElementById('submitBtn').innerText = "Update Entry";
             
-            // NEW: Activate glowing emerald border when entering edit mode
             const logSection = document.getElementById('logEntrySection');
             if (logSection) logSection.classList.add('edit-mode');
             
@@ -723,7 +760,6 @@
             document.getElementById('submitBtn').innerText = "Add Entry"; 
             document.getElementById('date').valueAsDate = new Date();
             
-            // NEW: Remove glowing edit border when returning to add mode
             const logSection = document.getElementById('logEntrySection');
             if (logSection) logSection.classList.remove('edit-mode');
         }
@@ -772,6 +808,62 @@
         }
 
         document.getElementById('date').valueAsDate = new Date();
+
+        // NEW: Password visibility toggle (only affects login modal)
+        function togglePasswordVisibility() {
+            const passInput = document.getElementById('authPass');
+            const icon = document.getElementById('eyeIcon');
+            if (passInput.type === 'password') {
+                passInput.type = 'text';
+                icon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908l3.42 3.42M9.75 9.75l4.95 4.95M3 3l18 18" />`;
+            } else {
+                passInput.type = 'password';
+                icon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5 16.477 5 20.268 7.943 21.542 12 20.268 16.057 16.477 19 12 19 7.523 19 3.732 16.057 2.458 12z" />`;
+            }
+        }
+
+        // NEW: Inactivity timeout system (60s inactivity → 30s warning modal)
+        function resetInactivityTimer() {
+            if (inactivityTimer) clearTimeout(inactivityTimer);
+            inactivityTimer = setTimeout(() => {
+                showInactivityModal();
+            }, 60000); // 1 minute
+        }
+
+        function showInactivityModal() {
+            const modal = document.getElementById('inactivityModal');
+            const display = document.getElementById('countdownDisplay');
+            let timeLeft = 30;
+            modal.classList.remove('hidden');
+            display.textContent = timeLeft;
+
+            if (countdownInterval) clearInterval(countdownInterval);
+            countdownInterval = setInterval(() => {
+                timeLeft--;
+                display.textContent = timeLeft;
+                if (timeLeft <= 0) {
+                    clearInterval(countdownInterval);
+                    handleLogout();
+                }
+            }, 1000);
+        }
+
+        function cancelInactivityLogout() {
+            const modal = document.getElementById('inactivityModal');
+            if (countdownInterval) clearInterval(countdownInterval);
+            modal.classList.add('hidden');
+            resetInactivityTimer(); // restart the 60-second timer
+        }
+
+        function startInactivityListener() {
+            // Reset timer on any user activity
+            const events = ['mousemove', 'keydown', 'scroll', 'click', 'touchstart'];
+            events.forEach(event => {
+                document.addEventListener(event, resetInactivityTimer, { passive: true });
+            });
+            // Start the first timer
+            resetInactivityTimer();
+        }
     </script>
 </body>
 </html>
