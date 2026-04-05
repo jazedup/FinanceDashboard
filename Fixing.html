@@ -576,20 +576,14 @@
         }
 
         function handleLogout() {
-            // FIXED: Explicitly reset UI state + clear everything before reload
             if (inactivityTimer) clearTimeout(inactivityTimer);
             if (countdownInterval) clearInterval(countdownInterval);
             document.getElementById('inactivityModal').classList.add('hidden');
             
             localStorage.removeItem('finance_session');
-            localStorage.removeItem('finance_user'); // safety for any legacy key
+            localStorage.removeItem('finance_user');
             
-            // Force immediate UI reset to login screen
-            document.getElementById('mainDashboard').classList.add('hidden');
-            document.getElementById('authOverlay').classList.remove('hidden');
-            currentUser = null;
-            
-            // Final reload for complete clean state
+            // Clean reload - no manual UI toggle (prevents flashing)
             location.reload();
         }
 
