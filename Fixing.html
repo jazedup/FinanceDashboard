@@ -375,8 +375,7 @@
         let inactivityTimer = null;
         let countdownInterval = null;
         
-        // NEW: 1-minute session expiry for closed browser/tab (minimal addition)
-        const SESSION_TIMEOUT_MS = 60000; // 1 minute
+        const SESSION_TIMEOUT_MS = 60000;
 
         const phFormat = new Intl.NumberFormat('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
@@ -449,7 +448,6 @@
                     clearInterval(check);
                     document.getElementById('loadingScreen').classList.add('hidden');
                     
-                    // NEW: Check session timestamp (forces re-login after 1 minute even if tab was closed)
                     const savedSession = localStorage.getItem('finance_session');
                     if (savedSession) {
                         const session = JSON.parse(savedSession);
@@ -457,7 +455,7 @@
                             currentUser = session.user;
                             enterDashboard();
                         } else {
-                            localStorage.removeItem('finance_session'); // expired
+                            localStorage.removeItem('finance_session');
                         }
                     }
                 }
@@ -565,7 +563,6 @@
         }
 
         function enterDashboard() {
-            // NEW: Save session with timestamp (for 1-minute expiry after closing tab)
             localStorage.setItem('finance_session', JSON.stringify({
                 user: currentUser,
                 lastActive: Date.now()
@@ -579,11 +576,21 @@
         }
 
         function handleLogout() {
+            // FIXED: Explicitly reset UI state + clear everything before reload
             if (inactivityTimer) clearTimeout(inactivityTimer);
             if (countdownInterval) clearInterval(countdownInterval);
             document.getElementById('inactivityModal').classList.add('hidden');
-            localStorage.removeItem('finance_session'); // NEW: clear session on logout
-            location.reload(); 
+            
+            localStorage.removeItem('finance_session');
+            localStorage.removeItem('finance_user'); // safety for any legacy key
+            
+            // Force immediate UI reset to login screen
+            document.getElementById('mainDashboard').classList.add('hidden');
+            document.getElementById('authOverlay').classList.remove('hidden');
+            currentUser = null;
+            
+            // Final reload for complete clean state
+            location.reload();
         }
 
         function initDataSync(username) {
@@ -840,7 +847,6 @@
                 showInactivityModal();
             }, 60000);
             
-            // NEW: Update session timestamp on every activity (so closed-tab expiry works)
             if (currentUser) {
                 localStorage.setItem('finance_session', JSON.stringify({
                     user: currentUser,
