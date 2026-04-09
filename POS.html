@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>POS System</title>
+    <title>Car Wash POS</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
@@ -28,246 +28,451 @@
     <style>
         body { font-family: system-ui, -apple-system, sans-serif; }
         .product-btn { transition: all 0.2s; }
-        .product-btn:hover { transform: scale(1.05); }
-        .cart-item { transition: all 0.2s; }
+        .product-btn:hover { transform: scale(1.02); }
+        .category-btn.active { border-color: #10b981; background-color: #064e3b; color: white; }
+        .modal-animate { animation: fadeIn 0.2s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+        .settings-content { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+        
+        @media print {
+            body * { visibility: hidden; }
+            #receiptPrintArea, #receiptPrintArea * { visibility: visible; }
+            #receiptPrintArea { position: absolute; left: 0; top: 0; width: 100%; color: black !important; }
+            .no-print { display: none !important; }
+        }
     </style>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen">
 
-    <!-- Loading -->
     <div id="loadingScreen" class="fixed inset-0 bg-slate-950 z-[200] flex flex-col items-center justify-center">
         <div class="w-12 h-12 border-4 border-emerald-500/20 border-t-emerald-500 rounded-full animate-spin mb-4"></div>
-        <p class="text-slate-500 font-mono text-xs uppercase tracking-widest">Connecting to POS...</p>
+        <p class="text-slate-500 font-mono text-xs uppercase tracking-widest">Initialising POS...</p>
     </div>
 
-    <!-- Login -->
-    <div id="authOverlay" class="fixed inset-0 bg-slate-950 z-[100] flex items-center justify-center p-4">
-        <div class="bg-slate-900 border border-slate-800 p-8 rounded-3xl shadow-2xl w-full max-w-[400px]">
-            <h2 class="text-3xl font-black text-emerald-500 mb-6 italic text-center">POS System</h2>
+    <div id="authOverlay" class="fixed inset-0 bg-slate-950 z-[100] flex flex-col items-center justify-center p-4">
+        <div class="mb-6 px-4 py-2 bg-slate-900 border border-slate-800 rounded-full flex items-center gap-2">
+            <span class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
+            <span class="text-[10px] font-mono text-slate-400 uppercase tracking-widest">Connected to: <span id="loginOwnerDisplay" class="text-emerald-500 font-bold"></span></span>
+        </div>
+
+        <div id="loginCard" class="bg-slate-900 border border-slate-800 p-8 rounded-3xl shadow-2xl w-full max-w-[400px] relative">
+            <button onclick="openMenu('settingsMenu')" class="absolute top-6 right-6 text-slate-500 hover:text-emerald-500">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+            </button>
+            <h2 class="text-3xl font-black text-emerald-500 mb-6 italic text-center uppercase">Car Wash POS</h2>
             <div class="space-y-4">
-                <input type="text" id="authUsername" placeholder="Username" class="w-full bg-slate-800 border-none rounded-xl p-4 text-white outline-none focus:ring-2 focus:ring-emerald-500">
-                <div class="relative">
-                    <input type="password" id="authPass" placeholder="Password" class="w-full bg-slate-800 border-none rounded-xl p-4 text-white outline-none focus:ring-2 focus:ring-emerald-500 pr-12">
-                    <button onclick="togglePasswordVisibility()" class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-emerald-400">
-                        👁️
-                    </button>
-                </div>
+                <input type="text" id="authUsername" placeholder="Cashier Name" class="w-full bg-slate-800 border-none rounded-xl p-4 text-white outline-none focus:ring-2 focus:ring-emerald-500">
+                <input type="password" id="authPass" placeholder="Password" class="w-full bg-slate-800 border-none rounded-xl p-4 text-white outline-none focus:ring-2 focus:ring-emerald-500">
                 <p id="authError" class="text-rose-500 text-xs font-bold text-center hidden"></p>
-                <button onclick="handleAuthAction()" class="w-full bg-emerald-600 hover:bg-emerald-500 py-4 rounded-xl font-black uppercase">Open POS</button>
+                <button onclick="handleAuthAction()" class="w-full bg-emerald-600 hover:bg-emerald-500 py-4 rounded-xl font-black uppercase">Login</button>
+            </div>
+        </div>
+
+        <div id="settingsMenu" class="hidden bg-slate-900 border border-slate-800 p-8 rounded-3xl shadow-2xl w-full max-w-[350px] modal-animate text-center">
+            <div class="relative mb-6">
+                <button onclick="closeAllMenus()" class="absolute left-0 top-1/2 -translate-y-1/2 text-emerald-500 p-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M15 19l-7-7 7-7" /></svg>
+                </button>
+                <h2 class="text-xl font-bold">Settings</h2>
+            </div>
+            <div class="space-y-3">
+                <button onclick="openMenu('dbConfigModal')" class="w-full bg-slate-800 p-5 rounded-2xl font-bold">Database Config</button>
+                <button onclick="openMenu('cashierModal')" class="w-full bg-slate-800 p-5 rounded-2xl font-bold">Manage Cashiers</button>
+            </div>
+        </div>
+
+        <div id="dbConfigModal" class="hidden bg-slate-900 border border-slate-800 p-8 rounded-3xl shadow-2xl w-full max-w-[400px] modal-animate">
+            <div class="relative mb-8 text-center">
+                <button onclick="openMenu('settingsMenu')" class="absolute left-0 top-1/2 -translate-y-1/2 text-emerald-500 p-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M15 19l-7-7 7-7" /></svg>
+                </button>
+                <h2 class="text-xl font-bold">Database Config</h2>
+            </div>
+            <div class="settings-content space-y-4">
+                <input type="text" id="ownerIdInput" placeholder="Owner ID" class="w-full text-center bg-slate-800 rounded-xl p-4 outline-none">
+                <input type="password" id="ownerPassInput" placeholder="Admin Password" class="w-full text-center bg-slate-800 rounded-xl p-4 outline-none">
+                <button onclick="saveDbConfig()" id="saveDbBtn" class="w-full bg-emerald-600 py-4 rounded-xl font-black uppercase">Save</button>
+                <p id="dbMsg" class="text-center text-xs h-4 font-bold"></p>
+            </div>
+        </div>
+
+        <div id="cashierModal" class="hidden bg-slate-900 border border-slate-800 p-8 rounded-3xl shadow-2xl w-full max-w-[400px] modal-animate">
+            <div class="relative mb-8 text-center">
+                <button onclick="openMenu('settingsMenu')" class="absolute left-0 top-1/2 -translate-y-1/2 text-emerald-500 p-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M15 19l-7-7 7-7" /></svg>
+                </button>
+                <h2 class="text-xl font-bold">Register Cashier</h2>
+            </div>
+            <div class="settings-content space-y-4">
+                <input type="text" id="newCashierName" placeholder="Cashier Name" class="w-full text-center bg-slate-800 rounded-xl p-4 outline-none">
+                <input type="password" id="newCashierPass" placeholder="Cashier Password" class="w-full text-center bg-slate-800 rounded-xl p-4 outline-none">
+                <button onclick="createNewCashier()" id="regCashBtn" class="w-full bg-blue-600 py-4 rounded-xl font-black uppercase">Register</button>
+                <p id="cashierMsg" class="text-center text-[10px] leading-tight h-8 font-bold"></p>
             </div>
         </div>
     </div>
 
-    <!-- Main POS -->
     <div id="mainPOS" class="hidden max-w-7xl mx-auto p-6">
         <div class="flex justify-between items-center mb-6">
-            <h1 class="text-4xl font-black text-emerald-500 tracking-tighter">POS SYSTEM</h1>
+            <div>
+                <h1 class="text-4xl font-black text-emerald-500 italic">CAR WASH POS</h1>
+                <p class="text-[10px] font-mono text-slate-500 uppercase tracking-widest mt-1">OWNER DB: <span id="posOwnerDisplay" class="text-slate-300"></span></p>
+            </div>
             <div class="flex items-center gap-4">
-                <p id="posUserDisplay" class="font-mono text-sm text-slate-400"></p>
-                <button onclick="handleLogout()" class="px-6 py-3 bg-rose-600 hover:bg-rose-500 rounded-2xl font-bold text-sm">Logout</button>
+                <button onclick="toggleCashierPasswordModal()" id="posUserDisplay" class="font-mono text-sm text-slate-400 bg-slate-900 px-4 py-2 rounded-full border border-slate-800 hover:border-emerald-500 hover:text-emerald-500 transition-all uppercase"></button>
+                <button onclick="handleLogout()" class="px-6 py-3 bg-rose-600 rounded-2xl font-bold text-sm">Logout</button>
             </div>
         </div>
 
-        <!-- Today's Sales - NOW AT THE TOP -->
         <div class="mb-8">
-            <h2 class="text-lg font-bold mb-3 text-slate-400">Today's Sales</h2>
+            <h2 class="text-lg font-bold mb-3 text-slate-400">Your Sales Today</h2>
             <div id="todaySales" class="bg-slate-900 border border-slate-800 rounded-3xl p-6"></div>
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            <!-- Products -->
             <div class="lg:col-span-8">
-                <h2 class="text-lg font-bold mb-4 text-slate-400">Quick Products</h2>
-                <div id="productGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4"></div>
+                <div class="flex flex-wrap gap-2 mb-6">
+                    <button onclick="selectCategory('Sedan')" class="category-btn active px-6 py-3 rounded-xl border border-slate-700 font-bold uppercase text-xs" id="btn-Sedan">Sedan</button>
+                    <button onclick="selectCategory('SUV')" class="category-btn px-6 py-3 rounded-xl border border-slate-700 font-bold uppercase text-xs" id="btn-SUV">SUV</button>
+                    <button onclick="selectCategory('VAN')" class="category-btn px-6 py-3 rounded-xl border border-slate-700 font-bold uppercase text-xs" id="btn-VAN">VAN</button>
+                    <button onclick="selectCategory('Truck')" class="category-btn px-6 py-3 rounded-xl border border-slate-700 font-bold uppercase text-xs" id="btn-Truck">Truck</button>
+                    <button onclick="selectCategory('Motorcycle')" class="category-btn px-6 py-3 rounded-xl border border-slate-700 font-bold uppercase text-xs" id="btn-Motorcycle">Motorcycle</button>
+                </div>
+                
+                <h2 class="text-lg font-bold mb-4 text-slate-400">Available Services</h2>
+                <div id="productGrid" class="grid grid-cols-2 sm:grid-cols-3 gap-4"></div>
             </div>
 
-            <!-- Cart -->
-            <div class="lg:col-span-4 bg-slate-900 border border-slate-800 rounded-3xl p-6 flex flex-col">
-                <h2 class="font-bold mb-4">Current Sale</h2>
-                <div id="cartItems" class="flex-1 overflow-y-auto space-y-3 mb-6"></div>
-                
-                <div class="border-t border-slate-700 pt-6">
-                    <div class="flex justify-between text-xl font-bold">
-                        <span>Total</span>
-                        <span id="cartTotal" class="font-mono">₱0.00</span>
-                    </div>
-                    <button onclick="completeSale()" class="mt-6 w-full bg-emerald-600 hover:bg-emerald-500 py-5 rounded-2xl font-black text-xl uppercase tracking-wider">COMPLETE SALE</button>
+            <div class="lg:col-span-4 bg-slate-900 border border-slate-800 rounded-3xl p-6 flex flex-col h-fit">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="font-bold text-emerald-500 italic uppercase">Current Job</h2>
+                    <button onclick="toggleClearModal(true)" class="text-[10px] text-rose-500 font-black uppercase hover:underline">Clear All</button>
                 </div>
+                <div id="cartItems" class="flex-1 overflow-y-auto space-y-3 mb-6 max-h-[400px]"></div>
+                <div class="border-t border-slate-700 pt-6">
+                    <div class="flex justify-between text-2xl font-black"><span>Total</span><span id="cartTotal" class="font-mono text-emerald-500">₱0.00</span></div>
+                    <button onclick="completeSale()" class="mt-6 w-full bg-emerald-600 hover:bg-emerald-500 py-5 rounded-2xl font-black text-xl uppercase tracking-widest transition-all">COMPLETE SALE</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="receiptModal" class="hidden fixed inset-0 bg-slate-950/90 z-[200] flex items-center justify-center p-4">
+        <div class="bg-white text-slate-900 w-full max-w-md rounded-3xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh] modal-animate">
+            <div id="receiptPrintArea" class="p-8 overflow-y-auto flex-1">
+                <div class="text-center mb-6">
+                    <h2 class="text-2xl font-black uppercase italic">Transaction Receipt</h2>
+                    <p class="text-[10px] font-mono text-slate-500 uppercase tracking-tighter" id="receiptIdDisplay"></p>
+                </div>
+                <div class="border-y border-dashed border-slate-300 py-4 mb-4 space-y-2">
+                    <div class="flex justify-between text-xs"><span>Date:</span><span id="receiptDate" class="font-bold"></span></div>
+                    <div class="flex justify-between text-xs"><span>Cashier:</span><span id="receiptCashier" class="font-bold uppercase"></span></div>
+                </div>
+                <div id="receiptItems" class="space-y-3 mb-6"></div>
+                <div class="border-t border-slate-900 pt-4">
+                    <div class="flex justify-between text-xl font-black"><span>TOTAL</span><span id="receiptTotal"></span></div>
+                </div>
+                <p class="text-center text-[10px] text-slate-400 mt-8 uppercase font-bold">Thank you for your business!</p>
+            </div>
+            <div class="p-4 bg-slate-100 flex gap-2 no-print">
+                <button onclick="window.print()" class="flex-1 bg-slate-900 text-white py-4 rounded-2xl font-bold uppercase text-sm">Print</button>
+                <button onclick="closeReceipt()" class="flex-1 bg-white border border-slate-300 py-4 rounded-2xl font-bold uppercase text-sm">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="clearConfirmModal" class="hidden fixed inset-0 bg-slate-950/90 z-[250] flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 p-8 rounded-3xl shadow-2xl w-full max-w-[350px] modal-animate text-center">
+            <div class="w-16 h-16 bg-rose-500/10 text-rose-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+            </div>
+            <h2 class="text-xl font-bold mb-2">Clear Current Job?</h2>
+            <p class="text-slate-400 text-sm mb-6">This will remove all items currently in the cart.</p>
+            <div class="flex gap-2">
+                <button onclick="toggleClearModal(false)" class="w-1/2 bg-slate-800 py-4 rounded-xl font-bold uppercase text-xs">Cancel</button>
+                <button onclick="confirmClearCart()" class="w-1/2 bg-rose-600 py-4 rounded-xl font-bold uppercase text-xs">Clear All</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="cashierSelfService" class="hidden fixed inset-0 bg-slate-950/90 z-[150] flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 p-8 rounded-3xl shadow-2xl w-full max-w-[400px] modal-animate text-center">
+            <h2 class="text-xl font-bold mb-2">Account Settings</h2>
+            <p id="selfServiceUser" class="text-emerald-500 font-mono text-xs mb-6 uppercase"></p>
+            <div class="space-y-4">
+                <input type="password" id="selfNewPass" placeholder="Enter New Password" class="w-full text-center bg-slate-800 rounded-xl p-4 outline-none focus:ring-2 focus:ring-emerald-500">
+                <div class="flex gap-2">
+                    <button onclick="toggleCashierPasswordModal()" class="w-1/2 bg-slate-800 py-4 rounded-xl font-bold uppercase text-sm">Cancel</button>
+                    <button onclick="updateOwnPassword()" class="w-1/2 bg-emerald-600 py-4 rounded-xl font-bold uppercase text-sm">Update</button>
+                </div>
+                <p id="selfMsg" class="text-center text-xs h-4"></p>
             </div>
         </div>
     </div>
 
     <script>
-        let currentUser = null;
+        let currentUser = localStorage.getItem('posOwnerId') || "finance-dashboard-11987";
+        let currentCashier = null;
+        let activeCategory = 'Sedan';
         let cart = [];
-        let db_raw = {};
 
-        const products = [
-            { name: "Coffee", price: 50 },
-            { name: "Burger", price: 145 },
-            { name: "Fries", price: 95 },
-            { name: "Pizza Slice", price: 120 },
-            { name: "Soft Drink", price: 45 },
-            { name: "Sandwich", price: 110 },
-            { name: "Ice Cream", price: 65 },
-            { name: "Salad", price: 130 }
-        ];
+        const servicePricing = {
+            "Body Wash": { Sedan: 150, SUV: 200, VAN: 250, Truck: 350, Motorcycle: 80 },
+            "Wash & Wax": { Sedan: 350, SUV: 450, VAN: 500, Truck: 650, Motorcycle: 150 },
+            "Interior Detail": { Sedan: 1200, SUV: 1500, VAN: 1800, Truck: 2000, Motorcycle: 0 },
+            "Engine Wash": { Sedan: 350, SUV: 400, VAN: 400, Truck: 500, Motorcycle: 200 },
+            "Full Detail": { Sedan: 2500, SUV: 3500, VAN: 4000, Truck: 5000, Motorcycle: 800 }
+        };
 
-        function togglePasswordVisibility() {
-            const pass = document.getElementById('authPass');
-            pass.type = pass.type === 'password' ? 'text' : 'password';
+        function updateOwnerUI() {
+            document.getElementById('loginOwnerDisplay').innerText = currentUser;
+            document.getElementById('posOwnerDisplay').innerText = currentUser;
         }
 
-        async function handleAuthAction() {
-            const user = document.getElementById('authUsername').value.trim().toLowerCase();
-            const pass = document.getElementById('authPass').value.trim();
-            const errEl = document.getElementById('authError');
-
-            if (!user || !pass) return;
-            errEl.classList.add('hidden');
-
-            try {
-                const userRef = window.fb.ref(window.fb.db_fb, 'users/' + user);
-                const snapshot = await window.fb.get(userRef);
-                const data = snapshot.val();
-
-                if (!snapshot.exists() || data.password !== pass) throw new Error("Invalid username or password");
-
-                currentUser = user;
-                enterPOS();
-            } catch (e) {
-                errEl.textContent = e.message;
-                errEl.classList.remove('hidden');
-            }
-        }
-
-        function enterPOS() {
-            document.getElementById('authOverlay').classList.add('hidden');
-            document.getElementById('mainPOS').classList.remove('hidden');
-            document.getElementById('posUserDisplay').innerText = `👤 ${currentUser}`;
-
+        function selectCategory(cat) {
+            activeCategory = cat;
+            document.querySelectorAll('.category-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(`btn-${cat}`).classList.add('active');
             renderProducts();
-            loadTodaySales();
         }
 
         function renderProducts() {
-            const grid = document.getElementById('productGrid');
-            grid.innerHTML = '';
-            products.forEach(item => {
-                const btn = document.createElement('button');
-                btn.className = "product-btn bg-slate-800 hover:bg-emerald-900 border border-slate-700 rounded-2xl p-4 text-left";
-                btn.innerHTML = `
-                    <div class="font-bold">${item.name}</div>
-                    <div class="text-emerald-400 font-mono">₱${item.price}</div>
-                `;
-                btn.onclick = () => addToCart(item);
-                grid.appendChild(btn);
+            const grid = document.getElementById('productGrid'); grid.innerHTML = '';
+            Object.keys(servicePricing).forEach(service => {
+                const price = servicePricing[service][activeCategory];
+                if(price > 0) {
+                    const btn = document.createElement('button');
+                    btn.className = "product-btn bg-slate-800 border border-slate-700 rounded-2xl p-4 text-left shadow-md hover:border-emerald-500";
+                    btn.innerHTML = `<div class="text-[10px] text-slate-500 uppercase font-bold">${activeCategory}</div><div class="font-bold text-slate-200">${service}</div><div class="text-emerald-400 font-mono font-bold">₱${price}</div>`;
+                    btn.onclick = () => addToCart(service, price); grid.appendChild(btn);
+                }
             });
         }
 
-        function addToCart(item) {
-            const existing = cart.find(i => i.name === item.name);
-            if (existing) existing.qty++;
-            else cart.push({ ...item, qty: 1 });
+        function addToCart(name, price) {
+            const itemName = `${activeCategory} - ${name}`;
+            const existing = cart.find(i => i.name === itemName);
+            if (existing) existing.qty++; else cart.push({ name: itemName, price, qty: 1 });
             renderCart();
         }
 
         function renderCart() {
-            const container = document.getElementById('cartItems');
-            container.innerHTML = '';
+            const container = document.getElementById('cartItems'); container.innerHTML = '';
             let total = 0;
-
             cart.forEach((item, index) => {
-                const subtotal = item.price * item.qty;
-                total += subtotal;
-
+                const sub = item.price * item.qty; total += sub;
                 const div = document.createElement('div');
-                div.className = "cart-item flex justify-between items-center bg-slate-800 rounded-2xl p-4";
-                div.innerHTML = `
-                    <div>
-                        <div class="font-medium">${item.name}</div>
-                        <div class="text-slate-400 text-sm">₱${item.price} × ${item.qty}</div>
-                    </div>
-                    <div class="text-right">
-                        <div class="font-mono text-emerald-400">₱${subtotal}</div>
-                        <button onclick="removeFromCart(${index})" class="text-rose-400 text-xs mt-1">Remove</button>
-                    </div>
-                `;
+                div.className = "flex justify-between items-center bg-slate-800/50 rounded-2xl p-4 border border-slate-800";
+                div.innerHTML = `<div><div class="font-bold text-xs">${item.name}</div><div class="text-slate-500 text-[10px]">₱${item.price} × ${item.qty}</div></div><div class="text-right"><div class="font-mono text-emerald-400 font-bold">₱${sub}</div><button onclick="removeFromCart(${index})" class="text-rose-500 text-[10px] uppercase font-black">Remove</button></div>`;
                 container.appendChild(div);
             });
-
-            document.getElementById('cartTotal').innerHTML = `₱${total}`;
+            document.getElementById('cartTotal').innerText = `₱${total.toFixed(2)}`;
         }
 
-        function removeFromCart(index) {
-            cart.splice(index, 1);
+        function removeFromCart(index) { cart.splice(index, 1); renderCart(); }
+
+        function toggleClearModal(show) {
+            if(show && cart.length === 0) return;
+            document.getElementById('clearConfirmModal').classList.toggle('hidden', !show);
+        }
+
+        function confirmClearCart() {
+            cart = [];
             renderCart();
+            toggleClearModal(false);
         }
 
         async function completeSale() {
-            if (cart.length === 0) return alert("Cart is empty");
-
+            if (cart.length === 0) return;
             const total = cart.reduce((sum, item) => sum + item.price * item.qty, 0);
-            const today = new Date().toISOString().split('T')[0];
-
-            const saleEntry = {
-                Date: today,
-                Category: "POS Sales",
-                Amount: total,
-                Type: "Profit"
+            const personalizedCategory = `${currentCashier.toUpperCase()} POS`;
+            const saleEntry = { 
+                Date: new Date().toISOString().split('T')[0], 
+                Category: personalizedCategory, 
+                Amount: total, 
+                Type: "Profit", 
+                Cashier: currentCashier 
             };
 
-            await window.fb.push(window.fb.ref(window.fb.db_fb, `users/${currentUser}/transactions`), saleEntry);
-
-            alert(`✅ Sale of ₱${total} completed and saved to Finance Dashboard!`);
+            const newSaleRef = window.fb.push(window.fb.ref(window.fb.db_fb, `users/${currentUser}/transactions`));
+            await window.fb.set(newSaleRef, saleEntry);
             
-            cart = [];
+            showReceipt(newSaleRef.key, cart, total);
+            cart = []; 
             renderCart();
-            loadTodaySales();
         }
+
+        function showReceipt(id, items, total) {
+            const modal = document.getElementById('receiptModal');
+            const itemContainer = document.getElementById('receiptItems');
+            itemContainer.innerHTML = '';
+            items.forEach(item => {
+                const div = document.createElement('div');
+                div.className = "flex justify-between text-sm";
+                div.innerHTML = `<span>${item.qty}x ${item.name}</span><span class="font-mono font-bold">₱${(item.price * item.qty).toFixed(2)}</span>`;
+                itemContainer.appendChild(div);
+            });
+            document.getElementById('receiptIdDisplay').innerText = `TXID: ${id}`;
+            document.getElementById('receiptDate').innerText = new Date().toLocaleString();
+            document.getElementById('receiptCashier').innerText = currentCashier;
+            document.getElementById('receiptTotal').innerText = `₱${total.toFixed(2)}`;
+            modal.classList.remove('hidden');
+        }
+
+        function closeReceipt() { document.getElementById('receiptModal').classList.add('hidden'); }
 
         function loadTodaySales() {
             const container = document.getElementById('todaySales');
             const today = new Date().toISOString().split('T')[0];
-
-            const txRef = window.fb.ref(window.fb.db_fb, `users/${currentUser}/transactions`);
-            window.fb.onValue(txRef, (snapshot) => {
-                const data = snapshot.val() || {};
-                let todayTotal = 0;
-                let count = 0;
-
-                Object.values(data).forEach(item => {
-                    if (item.Date === today && item.Type === "Profit") {
-                        todayTotal += parseFloat(item.Amount) || 0;
-                        count++;
-                    }
+            window.fb.onValue(window.fb.ref(window.fb.db_fb, `users/${currentUser}/transactions`), (snap) => {
+                let total = 0, count = 0;
+                const personalizedCategory = `${currentCashier.toUpperCase()} POS`;
+                Object.values(snap.val() || {}).forEach(item => {
+                    if (item.Date === today && item.Type === "Profit" && item.Category === personalizedCategory) { total += parseFloat(item.Amount) || 0; count++; }
                 });
-
-                container.innerHTML = `
-                    <div class="flex justify-between items-center">
-                        <div>
-                            <p class="text-slate-400 text-sm">Today’s POS Sales</p>
-                            <p class="text-4xl font-black text-emerald-400 font-mono">₱${todayTotal}</p>
-                        </div>
-                        <div class="text-right">
-                            <p class="text-2xl font-bold">${count} transaction${count !== 1 ? 's' : ''}</p>
-                            <p class="text-slate-400 text-xs">Automatically synced to Finance Dashboard</p>
-                        </div>
-                    </div>
-                `;
+                container.innerHTML = `<div class="flex justify-between items-center"><div><p class="text-slate-500 text-xs font-black uppercase">Revenue</p><p class="text-4xl font-black text-emerald-500 font-mono">₱${total.toFixed(2)}</p></div><div class="text-right"><p class="text-xl font-black">${count} JOBS</p></div></div>`;
             });
         }
 
-        function handleLogout() {
-            currentUser = null;
-            cart = [];
-            document.getElementById('mainPOS').classList.add('hidden');
-            document.getElementById('authOverlay').classList.remove('hidden');
-            document.getElementById('authUsername').value = '';
-            document.getElementById('authPass').value = '';
+        function toggleCashierPasswordModal() {
+            const modal = document.getElementById('cashierSelfService');
+            modal.classList.toggle('hidden');
+            document.getElementById('selfServiceUser').innerText = `Editing: ${currentCashier}`;
+            document.getElementById('selfNewPass').value = '';
+            document.getElementById('selfMsg').innerText = '';
         }
 
+        async function updateOwnPassword() {
+            const newPass = document.getElementById('selfNewPass').value.trim();
+            const msg = document.getElementById('selfMsg');
+            if(!newPass) return;
+            try {
+                await window.fb.set(window.fb.ref(window.fb.db_fb, `users/${currentUser}/employee/${currentCashier}`), { password: newPass });
+                msg.className = "text-emerald-500 text-xs font-bold";
+                msg.innerText = "Password Updated!";
+                setTimeout(toggleCashierPasswordModal, 1500);
+            } catch (e) {
+                msg.className = "text-rose-500 text-xs font-bold";
+                msg.innerText = "Error updating password";
+            }
+        }
+
+        function openMenu(menuId) {
+            ['loginCard', 'settingsMenu', 'dbConfigModal', 'cashierModal'].forEach(id => document.getElementById(id).classList.add('hidden'));
+            document.getElementById(menuId).classList.remove('hidden');
+            if(menuId === 'dbConfigModal') document.getElementById('ownerIdInput').value = currentUser;
+            if(menuId === 'cashierModal') document.getElementById('cashierMsg').innerText = "";
+        }
+        function closeAllMenus() { openMenu('loginCard'); }
+        
+        async function saveDbConfig() {
+            const newId = document.getElementById('ownerIdInput').value.trim();
+            const msg = document.getElementById('dbMsg');
+            const btn = document.getElementById('saveDbBtn');
+            if(!newId) return;
+
+            btn.disabled = true;
+            msg.innerText = "Validating Owner ID...";
+            msg.className = "text-center text-xs h-4 font-bold text-slate-400";
+
+            try {
+                const checkSnap = await window.fb.get(window.fb.ref(window.fb.db_fb, `users/${newId}`));
+                if(!checkSnap.exists()){
+                    msg.className = "text-center text-xs h-4 font-bold text-rose-500";
+                    msg.innerText = "Error: Owner ID not found!";
+                    btn.disabled = false;
+                    return;
+                }
+                currentUser = newId; 
+                localStorage.setItem('posOwnerId', newId);
+                updateOwnerUI();
+                msg.className = "text-center text-xs h-4 font-bold text-emerald-500";
+                msg.innerText = "Saved Successfully!"; 
+                setTimeout(() => {
+                    openMenu('settingsMenu');
+                    msg.innerText = "";
+                    btn.disabled = false;
+                }, 1500);
+            } catch (e) { 
+                msg.className = "text-center text-xs h-4 font-bold text-rose-500";
+                msg.innerText = "Network Error: Try again";
+                btn.disabled = false;
+            }
+        }
+
+        // UPDATED: createNewCashier with Self-Check Admin Password Validation
+        async function createNewCashier() {
+            const adminPassInput = document.getElementById('ownerPassInput').value.trim();
+            const cName = document.getElementById('newCashierName').value.trim().toLowerCase();
+            const cPass = document.getElementById('newCashierPass').value.trim();
+            const msg = document.getElementById('cashierMsg');
+            const btn = document.getElementById('regCashBtn');
+
+            if (!adminPassInput) {
+                msg.className = "text-amber-500 text-[10px] font-bold";
+                msg.innerText = "ensure to use the admin password on the database config when registering a cashier";
+                return;
+            }
+
+            if (!cName || !cPass) return;
+            
+            btn.disabled = true;
+            msg.innerText = "Validating Admin credentials...";
+            msg.className = "text-slate-400 text-[10px] font-bold";
+
+            try {
+                // Fetch correct Admin Password from database for self-check
+                const ownerSnap = await window.fb.get(window.fb.ref(window.fb.db_fb, `users/${currentUser}/password`));
+                const correctAdminPass = ownerSnap.val();
+
+                if (adminPassInput !== correctAdminPass) {
+                    msg.className = "text-rose-500 text-[10px] font-bold";
+                    msg.innerText = "Error: Incorrect Admin Password. Check Database Config.";
+                    btn.disabled = false;
+                    return;
+                }
+
+                // Proceed with registration if admin check passes
+                const checkSnap = await window.fb.get(window.fb.ref(window.fb.db_fb, `users/${currentUser}/employee/${cName}`));
+                if(checkSnap.exists()){
+                    msg.className = "text-rose-500 text-xs font-bold";
+                    msg.innerText = "Error: Cashier already exists!";
+                    btn.disabled = false;
+                    return;
+                }
+
+                await window.fb.set(window.fb.ref(window.fb.db_fb, `users/${currentUser}/employee/${cName}`), { password: cPass });
+                msg.className = "text-emerald-500 text-xs font-bold";
+                msg.innerText = "Registered Successfully!";
+                btn.disabled = false;
+            } catch (e) { 
+                msg.className = "text-rose-500 text-xs font-bold";
+                msg.innerText = "Database Error";
+                btn.disabled = false;
+            }
+        }
+
+        async function handleAuthAction() {
+            const cInput = document.getElementById('authUsername').value.trim().toLowerCase();
+            const pInput = document.getElementById('authPass').value.trim();
+            if (!cInput || !pInput) return;
+            try {
+                const snap = await window.fb.get(window.fb.ref(window.fb.db_fb, `users/${currentUser}/employee/${cInput}`));
+                if (!snap.exists() || snap.val().password !== pInput) throw new Error("Invalid");
+                currentCashier = cInput;
+                document.getElementById('authOverlay').classList.add('hidden');
+                document.getElementById('mainPOS').classList.remove('hidden');
+                document.getElementById('posUserDisplay').innerText = `Staff: ${currentCashier}`;
+                renderProducts(); loadTodaySales();
+            } catch (e) { 
+                document.getElementById('authError').classList.remove('hidden'); 
+                document.getElementById('authError').innerText = "Invalid Login"; 
+            }
+        }
+        function handleLogout() { location.reload(); }
+        
         window.onload = () => {
+            updateOwnerUI();
             document.getElementById('loadingScreen').classList.add('hidden');
         };
     </script>
