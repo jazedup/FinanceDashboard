@@ -51,18 +51,23 @@
 
     <div id="authOverlay" class="fixed inset-0 bg-slate-950 z-[100] flex flex-col items-center justify-center p-4">
         <div class="mb-6 px-4 py-2 bg-slate-900 border border-slate-800 rounded-full flex items-center gap-2">
-            <span class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
-            <span class="text-[10px] font-mono text-slate-400 uppercase tracking-widest">Connected to: <span id="loginOwnerDisplay" class="text-emerald-500 font-bold"></span></span>
+            <span id="connectionDot" class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
+            <span class="text-[10px] font-mono text-slate-400 tracking-widest"><span class="uppercase">Connected to:</span> <span id="loginOwnerDisplay" class="text-emerald-500 font-bold"></span></span>
         </div>
 
         <div id="loginCard" class="bg-slate-900 border border-slate-800 p-8 rounded-3xl shadow-2xl w-full max-w-[400px] relative">
             <button onclick="openMenu('settingsMenu')" class="absolute top-6 right-6 text-slate-500 hover:text-emerald-500">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
             </button>
             <h2 class="text-3xl font-black text-emerald-500 mb-6 italic text-center uppercase">Car Wash POS</h2>
             <div class="space-y-4">
                 <input type="text" id="authUsername" placeholder="Cashier Name" class="w-full bg-slate-800 border-none rounded-xl p-4 text-white outline-none focus:ring-2 focus:ring-emerald-500">
-                <input type="password" id="authPass" placeholder="Password" class="w-full bg-slate-800 border-none rounded-xl p-4 text-white outline-none focus:ring-2 focus:ring-emerald-500">
+                <div class="relative">
+                    <input type="password" id="authPass" placeholder="Password" class="w-full bg-slate-800 border-none rounded-xl p-4 text-white outline-none focus:ring-2 focus:ring-emerald-500 pr-12">
+                    <button onclick="togglePassVisibility('authPass')" class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-emerald-500">
+                        <svg id="eye-authPass" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                    </button>
+                </div>
                 <p id="authError" class="text-rose-500 text-xs font-bold text-center hidden"></p>
                 <button onclick="handleAuthAction()" class="w-full bg-emerald-600 hover:bg-emerald-500 py-4 rounded-xl font-black uppercase">Login</button>
             </div>
@@ -90,7 +95,12 @@
             </div>
             <div class="settings-content space-y-4">
                 <input type="text" id="ownerIdInput" placeholder="Owner ID" class="w-full text-center bg-slate-800 rounded-xl p-4 outline-none">
-                <input type="password" id="ownerPassInput" placeholder="Admin Password" class="w-full text-center bg-slate-800 rounded-xl p-4 outline-none">
+                <div class="relative w-full">
+                    <input type="password" id="ownerPassInput" placeholder="Admin Password" class="w-full text-center bg-slate-800 rounded-xl p-4 outline-none pr-12">
+                    <button onclick="togglePassVisibility('ownerPassInput')" class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-emerald-500">
+                        <svg id="eye-ownerPassInput" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                    </button>
+                </div>
                 <button onclick="saveDbConfig()" id="saveDbBtn" class="w-full bg-emerald-600 py-4 rounded-xl font-black uppercase">Save</button>
                 <p id="dbMsg" class="text-center text-xs h-4 font-bold"></p>
             </div>
@@ -105,7 +115,12 @@
             </div>
             <div class="settings-content space-y-4">
                 <input type="text" id="newCashierName" placeholder="Cashier Name" class="w-full text-center bg-slate-800 rounded-xl p-4 outline-none">
-                <input type="password" id="newCashierPass" placeholder="Cashier Password" class="w-full text-center bg-slate-800 rounded-xl p-4 outline-none">
+                <div class="relative w-full">
+                    <input type="password" id="newCashierPass" placeholder="Cashier Password" class="w-full text-center bg-slate-800 rounded-xl p-4 outline-none pr-12">
+                    <button onclick="togglePassVisibility('newCashierPass')" class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-emerald-500">
+                        <svg id="eye-newCashierPass" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                    </button>
+                </div>
                 <button onclick="createNewCashier()" id="regCashBtn" class="w-full bg-blue-600 py-4 rounded-xl font-black uppercase">Register</button>
                 <p id="cashierMsg" class="text-center text-[10px] leading-tight h-8 font-bold"></p>
             </div>
@@ -116,7 +131,7 @@
         <div class="flex justify-between items-center mb-6">
             <div>
                 <h1 class="text-4xl font-black text-emerald-500 italic">CAR WASH POS</h1>
-                <p class="text-[10px] font-mono text-slate-500 uppercase tracking-widest mt-1">OWNER DB: <span id="posOwnerDisplay" class="text-slate-300"></span></p>
+                <p class="text-[10px] font-mono text-slate-500 tracking-widest mt-1"><span class="uppercase">OWNER DB:</span> <span id="posOwnerDisplay" class="text-slate-300"></span></p>
             </div>
             <div class="flex items-center gap-4">
                 <button onclick="toggleCashierPasswordModal()" id="posUserDisplay" class="font-mono text-sm text-slate-400 bg-slate-900 px-4 py-2 rounded-full border border-slate-800 hover:border-emerald-500 hover:text-emerald-500 transition-all uppercase"></button>
@@ -200,7 +215,12 @@
             <h2 class="text-xl font-bold mb-2">Account Settings</h2>
             <p id="selfServiceUser" class="text-emerald-500 font-mono text-xs mb-6 uppercase"></p>
             <div class="space-y-4">
-                <input type="password" id="selfNewPass" placeholder="Enter New Password" class="w-full text-center bg-slate-800 rounded-xl p-4 outline-none focus:ring-2 focus:ring-emerald-500">
+                <div class="relative w-full">
+                    <input type="password" id="selfNewPass" placeholder="Enter New Password" class="w-full text-center bg-slate-800 rounded-xl p-4 outline-none focus:ring-2 focus:ring-emerald-500 pr-12">
+                    <button onclick="togglePassVisibility('selfNewPass')" class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-emerald-500">
+                        <svg id="eye-selfNewPass" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                    </button>
+                </div>
                 <div class="flex gap-2">
                     <button onclick="toggleCashierPasswordModal()" class="w-1/2 bg-slate-800 py-4 rounded-xl font-bold uppercase text-sm">Cancel</button>
                     <button onclick="updateOwnPassword()" class="w-1/2 bg-emerald-600 py-4 rounded-xl font-bold uppercase text-sm">Update</button>
@@ -211,7 +231,7 @@
     </div>
 
     <script>
-        let currentUser = localStorage.getItem('posOwnerId') || "finance-dashboard-11987";
+        let currentUser = localStorage.getItem('posOwnerId') || "NOT CONNECTED";
         let currentCashier = null;
         let activeCategory = 'Sedan';
         let cart = [];
@@ -224,9 +244,45 @@
             "Full Detail": { Sedan: 2500, SUV: 3500, VAN: 4000, Truck: 5000, Motorcycle: 800 }
         };
 
+        // NEW: Toggle Password Visibility
+        function togglePassVisibility(inputId) {
+            const input = document.getElementById(inputId);
+            const eye = document.getElementById(`eye-${inputId}`);
+            if (input.type === "password") {
+                input.type = "text";
+                eye.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18" />`;
+            } else {
+                input.type = "password";
+                eye.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />`;
+            }
+        }
+
+        function setConnectionStatus(isHealthy) {
+            const dot = document.getElementById('connectionDot');
+            if (isHealthy && currentUser !== "NOT CONNECTED") {
+                dot.className = "w-2 h-2 bg-emerald-500 rounded-full animate-pulse";
+            } else {
+                dot.className = "w-2 h-2 bg-rose-500 rounded-full";
+            }
+        }
+
         function updateOwnerUI() {
             document.getElementById('loginOwnerDisplay').innerText = currentUser;
             document.getElementById('posOwnerDisplay').innerText = currentUser;
+            checkConnection();
+        }
+
+        async function checkConnection() {
+            if (currentUser === "NOT CONNECTED") {
+                setConnectionStatus(false);
+                return;
+            }
+            try {
+                const snap = await window.fb.get(window.fb.ref(window.fb.db_fb, `users/${currentUser}`));
+                setConnectionStatus(snap.exists());
+            } catch (e) {
+                setConnectionStatus(false);
+            }
         }
 
         function selectCategory(cat) {
@@ -339,6 +395,7 @@
             modal.classList.toggle('hidden');
             document.getElementById('selfServiceUser').innerText = `Editing: ${currentCashier}`;
             document.getElementById('selfNewPass').value = '';
+            document.getElementById('selfNewPass').type = 'password'; // Reset to hidden
             document.getElementById('selfMsg').innerText = '';
         }
 
@@ -360,32 +417,37 @@
         function openMenu(menuId) {
             ['loginCard', 'settingsMenu', 'dbConfigModal', 'cashierModal'].forEach(id => document.getElementById(id).classList.add('hidden'));
             document.getElementById(menuId).classList.remove('hidden');
-            if(menuId === 'dbConfigModal') document.getElementById('ownerIdInput').value = currentUser;
+            if(menuId === 'dbConfigModal') document.getElementById('ownerIdInput').value = (currentUser === "NOT CONNECTED" ? "" : currentUser);
             if(menuId === 'cashierModal') document.getElementById('cashierMsg').innerText = "";
         }
         function closeAllMenus() { openMenu('loginCard'); }
         
         async function saveDbConfig() {
-            const newId = document.getElementById('ownerIdInput').value.trim();
+            const rawId = document.getElementById('ownerIdInput').value.trim();
             const msg = document.getElementById('dbMsg');
             const btn = document.getElementById('saveDbBtn');
-            if(!newId) return;
+            if(!rawId) return;
 
             btn.disabled = true;
             msg.innerText = "Validating Owner ID...";
             msg.className = "text-center text-xs h-4 font-bold text-slate-400";
 
             try {
-                const checkSnap = await window.fb.get(window.fb.ref(window.fb.db_fb, `users/${newId}`));
+                const checkSnap = await window.fb.get(window.fb.ref(window.fb.db_fb, `users/${rawId}`));
+                
                 if(!checkSnap.exists()){
                     msg.className = "text-center text-xs h-4 font-bold text-rose-500";
                     msg.innerText = "Error: Owner ID not found!";
+                    currentUser = "NOT CONNECTED";
+                    setConnectionStatus(false);
                     btn.disabled = false;
                     return;
                 }
-                currentUser = newId; 
-                localStorage.setItem('posOwnerId', newId);
+
+                currentUser = rawId; 
+                localStorage.setItem('posOwnerId', rawId);
                 updateOwnerUI();
+                
                 msg.className = "text-center text-xs h-4 font-bold text-emerald-500";
                 msg.innerText = "Saved Successfully!"; 
                 setTimeout(() => {
@@ -396,11 +458,11 @@
             } catch (e) { 
                 msg.className = "text-center text-xs h-4 font-bold text-rose-500";
                 msg.innerText = "Network Error: Try again";
+                setConnectionStatus(false);
                 btn.disabled = false;
             }
         }
 
-        // UPDATED: createNewCashier with Self-Check Admin Password Validation
         async function createNewCashier() {
             const adminPassInput = document.getElementById('ownerPassInput').value.trim();
             const cName = document.getElementById('newCashierName').value.trim().toLowerCase();
@@ -413,7 +475,6 @@
                 msg.innerText = "ensure to use the admin password on the database config when registering a cashier";
                 return;
             }
-
             if (!cName || !cPass) return;
             
             btn.disabled = true;
@@ -421,7 +482,6 @@
             msg.className = "text-slate-400 text-[10px] font-bold";
 
             try {
-                // Fetch correct Admin Password from database for self-check
                 const ownerSnap = await window.fb.get(window.fb.ref(window.fb.db_fb, `users/${currentUser}/password`));
                 const correctAdminPass = ownerSnap.val();
 
@@ -432,7 +492,6 @@
                     return;
                 }
 
-                // Proceed with registration if admin check passes
                 const checkSnap = await window.fb.get(window.fb.ref(window.fb.db_fb, `users/${currentUser}/employee/${cName}`));
                 if(checkSnap.exists()){
                     msg.className = "text-rose-500 text-xs font-bold";
